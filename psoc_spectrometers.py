@@ -32,8 +32,8 @@ class AS7262(BaseSpectrometer):
         self.integration_time_per_cycle = 5.8  # ms
 
     def set_gain(self, gain_setting):
-        self.usb.usb_write("AS7262|{0}".format(gain_setting))
+        self.usb.usb_write("A|{0}".format(gain_setting))
 
     def set_integration_time(self, integration_time_ms):
         integration_cycles = int(integration_time_ms / self.integration_time_per_cycle)
-        self.usb.usb_write("AS7262|{0}".format(str(integration_cycles).zfill(5)))
+        self.usb.usb_write("I|{0}".format(str(integration_cycles).zfill(5)))

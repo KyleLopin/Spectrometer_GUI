@@ -57,10 +57,11 @@ class ButtonFrame(tk.Frame):
         tk.OptionMenu(self, settings.gain_var, *gain_var_options).pack(side='top', pady=BUTTON_PADY)
 
         tk.Label(self, text="Integration time (ms):").pack(side='top', pady=BUTTON_PADY)
+        integration_time_var = ["{:.1f}".format(x*5.6) for x in range(255)]
         # tk.Spinbox(self, format="%.1f", from_=5.6, to=1428, increment=5.6,
         #            textvariable=settings.integration_time_var, command=self.validate_integration_time
         #            ).pack(side='top', pady=20)
-        tk.OptionMenu(self, settings.integration_time_var)
+        tk.OptionMenu(self, settings.integration_time_var, *integration_time_var).pack(side='top', pady=BUTTON_PADY)
 
         # make read frequency rate
         tk.Label(self, text="Set read rate:").pack(side='top', pady=BUTTON_PADY)
@@ -80,11 +81,14 @@ class ButtonFrame(tk.Frame):
         self.LED_button = tk.Button(self, text="Turn LED On", command=self.LED_toggle)
         self.LED_button.pack(side='top', pady=BUTTON_PADY)
 
-    def validate_integration_time(self):
-        """ Force the integration time variable to be a integral of 5.6 ms that the device uses """
-        # convert the input to a float, then round it off and multiply by 5.6 to get an accurate value
-        new_value = int(float(self.settings.integration_time_var.get()) / 5.6) * 5.6
-        self.settings.integration_time_var.set("{:.1f}".format(new_value))
+        self.run_button = tk.Button(self, text="Start", command=self.run_toggle)
+        self
+
+    # def validate_integration_time(self):
+    #     """ Force the integration time variable to be a integral of 5.6 ms that the device uses """
+    #     # convert the input to a float, then round it off and multiply by 5.6 to get an accurate value
+    #     new_value = int(float(self.settings.integration_time_var.get()) / 5.6) * 5.6
+    #     self.settings.integration_time_var.set("{:.1f}".format(new_value))
 
     def LED_toggle(self):
         print("Led tooggle", self.settings.LED_on)
@@ -95,6 +99,13 @@ class ButtonFrame(tk.Frame):
         else:
             self.settings.toggle_LED(True)
             self.LED_button.config(text="Turn LED off", relief=tk.RAISED)
+
+    def run_toggle(self):
+        if self.settings.reading:
+            self.settings.reading = False
+
+        else:
+            self.settings.reading = True
 
     def average_reads(self):
         print("average read: ", self.settings.average_reads.get())

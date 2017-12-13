@@ -62,11 +62,11 @@ class PSoC_USB(object):
             logging.error("USB writing error: {0}".format(error))
             self.connected = False
 
-        def usb_read_info(self, info_endpoint=None, num_usb_bytes=None):
-            if not info_endpoint:
-                info_endpoint = self.master_device.INFO_IN_ENDPOINT
-            if not num_usb_bytes:
-                num_usb_bytes = self.master_device.USB_INFO_BYTE_SIZE
+    def usb_read_info(self, info_endpoint=None, num_usb_bytes=None):
+        if not info_endpoint:
+            info_endpoint = self.master_device.INFO_IN_ENDPOINT
+        if not num_usb_bytes:
+            num_usb_bytes = self.master_device.USB_INFO_BYTE_SIZE
 
 
 

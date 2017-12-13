@@ -63,6 +63,9 @@ class DeviceSettings_AS7262(object):
         self.ind_power_level = IndPowerSetting.IND_POWER_1_mA
         self.ind_on = False
         self.read_rate = 1.0  # reads per second
+        self.reading = False
+
+
         # if the device should continuously read and average the data to show
         self.average_reads = tk.BooleanVar()
         self.average_reads.set(True)
