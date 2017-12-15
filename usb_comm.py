@@ -5,7 +5,6 @@
 # standard libraries
 import logging
 import threading
-from typing import Type
 # installed libraries
 import usb
 import usb.core
@@ -15,6 +14,12 @@ import usb.backend
 # local files
 import psoc_spectrometers
 
+PSOC_ID_MESSAGE = b"PSoC-Spectrometer"
+AS7262_ID_MESSAGE = b"AS7262"
+
+USB_DATA_BYTE_SIZE = 40
+IN_ENDPOINT = 0x81
+OUT_ENDPOINT = 0x02
 
 __author__ = 'Kyle Vitautas Lopin'
 
@@ -24,7 +29,9 @@ class PSoC_USB(object):
         self.master_device = master
         self.found = False
         self.connected = False
+        self.spectrometer = None
         self.device = self.connect_usb(vendor_id, product_id)
+        self.connection_test()
 
     def connect_usb(self, vendor_id, product_id):
         """
@@ -51,12 +58,39 @@ class PSoC_USB(object):
         device.set_configuration()
         return device
 
-    def usb_write(self, message, endpoint=None):
+    def connection_test(self):
+        """ Test if the device response correctly.  The device should return a message when
+        given and identification call of 'I', and return the Spectrometer the device is connect to
+        after given the command of 'i'.
+        :return: True or False if the device is communicating correctly
+        """
+        # needed to make usb_write work, will be updated if not connected correctly
+        self.connected = True
+
+        # first test if the PSoC is connected correctly
+        self.usb_write("I")  # device should identify itself
+        received_message = self.usb_read_data(encoding='string')
+        logging.debug('Received identifying message: {0}'.format(received_message))
+        if received_message != PSOC_ID_MESSAGE:
+            # set the connected state to false if the device is not working properly
+            logging.debug("PSoC send wrong message")
+            self.connected = False
+            return
+        logging.debug("PSoC send correct message")
+        # test for the spectrometer if the PSoC is connected
+        self.usb_write('i')  # device will return string of the spectrometer it is connected to
+        received_message = self.usb_read_data(encoding='string')
+        logging.debug('Received identifying message: {0}'.format(received_message))
+        if received_message == AS7262_ID_MESSAGE:
+            self.spectrometer = "AS7262"
+            logging.info("AS7262 attached")
+
+    def usb_write(self, message, endpoint=OUT_ENDPOINT):
         if not endpoint:
             endpoint = self.master_device.OUT_ENDPOINT
 
         try:
-            # self.device.write(endpoint, message)
+            self.device.write(endpoint, message)
             print("write to usb: ", message)
         except Exception as error:
             logging.error("USB writing error: {0}".format(error))
@@ -68,6 +102,35 @@ class PSoC_USB(object):
         if not num_usb_bytes:
             num_usb_bytes = self.master_device.USB_INFO_BYTE_SIZE
 
+    def usb_read_data(self, num_usb_bytes=USB_DATA_BYTE_SIZE, endpoint=IN_ENDPOINT, encoding=None):
+        """ Read data from the usb and return it, if the read fails, log the miss and return None
+        :param num_usb_bytes: number of bytes to read
+        :param endpoint: hexidecimal of endpoint to read, has to be formatted as 0x8n where
+        n is the hex of the encpoint number
+        :param encoding: string ['uint16', 'signed int16', or 'string] what data format to return
+        the usb data in
+        :return: array of the bytes read
+        """
+        if not self.connected:
+            logging.info("not working")
+            return None
+        try:
+            usb_input = self.device.read(endpoint, num_usb_bytes, 2000)  # TODO fix this
+            print(usb_input)
+        except Exception as error:
+            logging.error("Failed data read")
+            logging.error("No IN ENDPOINT: %s", error)
+            return None
+        if encoding == 'uint16':
+            pass
+            # return convert_uint8_uint16(usb_input)
+        elif encoding == "signed int16":
+            pass
+            # return convert_uint8_to_signed_int16(usb_input)
+        elif encoding == 'string':
+            return usb_input.tostring()  # remove the 0x00 end of string
+        else:  # no encoding so just return raw data
+            return usb_input
 
 
 class ThreadedUSBDataCollector(threading.Thread):

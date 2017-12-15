@@ -72,22 +72,22 @@ class DeviceSettings_AS7262(object):
 
         self.gain_var = tk.StringVar()
         self.gain_var.set("1")
-        self.gain_var.trace_add("write", self.gain_var_set)
+        self.gain_var.trace("w", self.gain_var_set)
 
         # leave the device only using bank mode 3 for now
         self.measurement_mode_var = tk.StringVar()
 
         self.integration_time_var = tk.StringVar()
         self.integration_time_var.set(self.integration_time)
-        self.integration_time_var.trace_add("write", self.integration_time_set)
+        self.integration_time_var.trace("w", self.integration_time_set)
 
         self.LED_power_level_var = tk.StringVar()
         self.LED_power_level_var.set(str("12.5 mA"))
-        self.LED_power_level_var.trace_add("write", self.LED_power_set)
+        self.LED_power_level_var.trace("w", self.LED_power_set)
 
         self.read_rate_var = tk.StringVar()
         self.read_rate_var.set("1 sec")
-        self.read_rate_var.trace_add("write", self.read_rate_set)
+        self.read_rate_var.trace("w", self.read_rate_set)
 
     def gain_var_set(self, *args):
         self.gain = GAIN_SETTING_MAP[self.gain_var.get()].value

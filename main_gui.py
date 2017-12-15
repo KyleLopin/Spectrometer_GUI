@@ -22,6 +22,8 @@ __author__ = 'Kyle Vitautas Lopin'
 class SpectrometerGUI(tk.Tk):
     def __init__(self, parent=None):
         tk.Tk.__init__(self, parent)
+        logging.basicConfig(format='%(asctime)s %(module)s %(lineno)d: %(levelname)s %(message)s',
+                            datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
         # make the main frame with the graph and button area
         main_frame = tk.Frame(self)
         main_frame.pack(side='top', fill=tk.BOTH, expand=True)
@@ -39,6 +41,8 @@ class SpectrometerGUI(tk.Tk):
         # make the status frame with the connect button and status information
         status_frame = tk.Frame(self)
         status_frame.pack(side='top', fill=tk.X)
+
+
 
 
 BUTTON_PADY = 7
@@ -110,6 +114,11 @@ class ButtonFrame(tk.Frame):
     def average_reads(self):
         print("average read: ", self.settings.average_reads.get())
 
+
+class StatusFrame(tk.Frame):
+    def __init__(self, parent: tk.Tk, device: psoc_spectrometers.AS7262):
+        tk.Frame.__init__(self, parent)
+        print('device str: ')
 
 if __name__ == '__main__':
     app = SpectrometerGUI()
