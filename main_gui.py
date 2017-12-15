@@ -39,7 +39,7 @@ class SpectrometerGUI(tk.Tk):
         self.buttons_frame.pack(side='left', padx=10)
 
         # make the status frame with the connect button and status information
-        status_frame = tk.Frame(self)
+        status_frame = StatusFrame(self, self.device)
         status_frame.pack(side='top', fill=tk.X)
 
 
@@ -118,7 +118,19 @@ class ButtonFrame(tk.Frame):
 class StatusFrame(tk.Frame):
     def __init__(self, parent: tk.Tk, device: psoc_spectrometers.AS7262):
         tk.Frame.__init__(self, parent)
-        print('device str: ')
+        status_str = tk.StringVar()
+        if device.usb.spectrometer:
+            status_str.set("Spectrometer: {0} connected".format(device.usb.spectrometer))
+        elif device.usb.connected:
+            status_str.set("Sensor not found on PSoC")
+        elif device.usb.found:
+            status_str.set("Device found but not responding properly")
+        else:
+            status_str.set("No device found")
+
+        status_label = tk.Label(self, textvariable=status_str)
+        status_label.pack(side='left')
+
 
 if __name__ == '__main__':
     app = SpectrometerGUI()
