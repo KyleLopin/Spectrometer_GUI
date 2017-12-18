@@ -4,6 +4,7 @@
 
 # standard libraries
 import logging
+import random
 import threading
 # installed libraries
 import usb
@@ -90,8 +91,9 @@ class PSoC_USB(object):
             endpoint = self.master_device.OUT_ENDPOINT
 
         try:
-            self.device.write(endpoint, message)
             print("write to usb: ", message)
+            self.device.write(endpoint, message)
+
         except Exception as error:
             logging.error("USB writing error: {0}".format(error))
             self.connected = False
@@ -131,6 +133,10 @@ class PSoC_USB(object):
             return usb_input.tostring()  # remove the 0x00 end of string
         else:  # no encoding so just return raw data
             return usb_input
+
+    def read_data(self):
+        # mock a data read now
+
 
 
 class ThreadedUSBDataCollector(threading.Thread):

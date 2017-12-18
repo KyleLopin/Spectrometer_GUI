@@ -62,9 +62,10 @@ class DeviceSettings_AS7262(object):
         self.LED_on = False
         self.ind_power_level = IndPowerSetting.IND_POWER_1_mA
         self.ind_on = False
-        self.read_rate = 1.0  # reads per second
-        self.reading = False
-
+        self.read_period = 1000 # milliseconds per read
+        self.reading = tk.BooleanVar()
+        self.reading.set(False)
+        self.reading.trace("w", self.toggle_read)
 
         # if the device should continuously read and average the data to show
         self.average_reads = tk.BooleanVar()
@@ -85,9 +86,9 @@ class DeviceSettings_AS7262(object):
         self.LED_power_level_var.set(str("12.5 mA"))
         self.LED_power_level_var.trace("w", self.LED_power_set)
 
-        self.read_rate_var = tk.StringVar()
-        self.read_rate_var.set("1 sec")
-        self.read_rate_var.trace("w", self.read_rate_set)
+        self.read_period_var = tk.StringVar()
+        self.read_period_var.set("1 sec")
+        self.read_period_var.trace("w", self.read_period_set)
 
     def gain_var_set(self, *args):
         self.gain = GAIN_SETTING_MAP[self.gain_var.get()].value
@@ -95,9 +96,7 @@ class DeviceSettings_AS7262(object):
         self.device.set_gain(self.gain)
 
     def integration_time_set(self, *args):
-        print("integration time:", self.integration_time_var.get())
         self.integration_time = int(float(self.integration_time_var.get()))
-        print("new integration time:", self.integration_time)
         self.device.set_integration_time(self.integration_time)
 
     def LED_power_set(self, *args):
@@ -112,7 +111,12 @@ class DeviceSettings_AS7262(object):
             self.LED_on = False
         print("Led: ", self.LED_on)
 
-    def read_rate_set(self, *args):
-        print("read rate changed", self.read_rate_var.get())
-        self.read_rate = READ_RATE_MAP[self.read_rate_var.get()]
-        print("read every {0} seconds".format(self.read_rate))
+    def read_period_set(self, *args):
+        self.read_period = 1000.0 * float(self.read_period_var.get().split()[0])
+        self.device.set_read_period(self.read_period)
+
+    def toggle_read(self, *args):
+        if self.reading.get():  # has just been set to true
+            self.device.start_continuous_read()
+        else:
+            self.device.stop_read()

@@ -43,8 +43,6 @@ class SpectrometerGUI(tk.Tk):
         status_frame.pack(side='top', fill=tk.X)
 
 
-
-
 BUTTON_PADY = 7
 
 
@@ -65,13 +63,15 @@ class ButtonFrame(tk.Frame):
         # tk.Spinbox(self, format="%.1f", from_=5.6, to=1428, increment=5.6,
         #            textvariable=settings.integration_time_var, command=self.validate_integration_time
         #            ).pack(side='top', pady=20)
-        tk.OptionMenu(self, settings.integration_time_var, *integration_time_var).pack(side='top', pady=BUTTON_PADY)
+        tk.OptionMenu(self, settings.integration_time_var, *integration_time_var,
+                      command=self.integration_time_set).pack(side='top', pady=BUTTON_PADY)
 
         # make read frequency rate
         tk.Label(self, text="Set read rate:").pack(side='top', pady=BUTTON_PADY)
-        # frequency_options = ["200 ms", "500 ms", "1 sec", "5 sec", "10 sec", "30 sec"]
-        frequency_options = device_settings.READ_RATE_MAP.keys()
-        tk.OptionMenu(self, settings.read_rate_var, *frequency_options).pack(side='top', pady=BUTTON_PADY)
+        self.frequency_options = ["0.2 sec", "0.5 sec", "1 sec", "5 sec", "10 sec", "30 sec"]
+        # frequency_options = device_settings.READ_RATE_MAP.keys()
+        self.freq_menu = tk.OptionMenu(self, settings.read_period_var, *self.frequency_options)
+        self.freq_menu.pack(side='top', pady=BUTTON_PADY)
 
         tk.Checkbutton(self, text="Integrate multiple reads", variable=settings.average_reads,
                        command=self.average_reads, onvalue=True, offvalue=False).pack(side='top', pady=BUTTON_PADY)
@@ -85,14 +85,36 @@ class ButtonFrame(tk.Frame):
         self.LED_button = tk.Button(self, text="Turn LED On", command=self.LED_toggle)
         self.LED_button.pack(side='top', pady=BUTTON_PADY)
 
-        self.run_button = tk.Button(self, text="Start", command=self.run_toggle)
-        self
+        self.run_button = tk.Button(self, text="Start Reading", command=self.run_toggle)
+        self.run_button.pack(side="top", pady=BUTTON_PADY)
 
     # def validate_integration_time(self):
     #     """ Force the integration time variable to be a integral of 5.6 ms that the device uses """
     #     # convert the input to a float, then round it off and multiply by 5.6 to get an accurate value
     #     new_value = int(float(self.settings.integration_time_var.get()) / 5.6) * 5.6
     #     self.settings.integration_time_var.set("{:.1f}".format(new_value))
+
+    def integration_time_set(self, int_time):
+        integration_time = float(int_time)/1000.0
+        if integration_time > 1.0:
+            new_freq_set = ["{0:.3f} sec".format(integration_time)]
+            new_freq_set.extend(self.frequency_options[3:])
+        elif integration_time > 0.5:
+            new_freq_set = ["{0:.3f} sec".format(integration_time)]
+            new_freq_set.extend(self.frequency_options[2:])
+        elif integration_time > 0.2:
+            new_freq_set = ["{0:.3f} sec".format(integration_time)]
+            new_freq_set.extend(self.frequency_options[1:])
+        else:
+            new_freq_set = self.frequency_options
+        self.update_freq_menu(new_freq_set)
+
+    def update_freq_menu(self, new_set):
+        menu = self.freq_menu["menu"]
+        menu.delete(0, "end")
+        for _option in new_set:
+            menu.add_command(label=_option, command=tk._setit(self.settings.read_period_var, _option))
+            # command=lambda value=_option: self.freq_menu.set(value))
 
     def LED_toggle(self):
         print("Led tooggle", self.settings.LED_on)
@@ -105,11 +127,13 @@ class ButtonFrame(tk.Frame):
             self.LED_button.config(text="Turn LED off", relief=tk.RAISED)
 
     def run_toggle(self):
-        if self.settings.reading:
-            self.settings.reading = False
+        if self.settings.reading.get():
+            self.settings.reading.set(False)
+            self.run_button.config(text="Start Reading")
 
         else:
-            self.settings.reading = True
+            self.settings.reading.set(True)
+            self.run_button.config(text="Stop Reading")
 
     def average_reads(self):
         print("average read: ", self.settings.average_reads.get())
