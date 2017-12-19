@@ -12,6 +12,8 @@ import matplotlib.animation as animation
 __author__ = 'Kyle Vitautas Lopin'
 
 
+WAVELENGTH = [450, 500, 550, 570, 600, 650]
+
 class SpectroPlotter(tk.Frame):
     def __init__(self, parent, data, _size=(6, 3)):
         tk.Frame.__init__(self, master=parent)
@@ -30,3 +32,17 @@ class SpectroPlotter(tk.Frame):
 
         self.canvas._tkcanvas.pack(side='top', fill=tk.BOTH, expand=True)
         self.canvas.draw()
+
+        self.axis.set_xlim([400, 700])
+        self.axis.set_xlabel("wavelength (nm)")
+
+        self.axis.set_ylim([0, 50])
+        self.axis.set_ylabel(r'$\mu$W/cm$^2$')
+        self.lines = None
+
+    def update_counts_data(self, counts):
+        print("update: ", counts)
+        if self.lines:
+            self.lines.set_ydata(counts)
+        else:
+            self.lines = self.axis.plot(WAVELENGTH, counts)

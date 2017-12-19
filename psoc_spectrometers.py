@@ -9,6 +9,7 @@ import tkinter as tk
 
 # local files
 import device_settings
+import main_gui
 import usb_comm
 
 __author__ = 'Kyle Vitautas Lopin'
@@ -27,7 +28,7 @@ class BaseSpectrometer(object):
 
 
 class AS7262(BaseSpectrometer):
-    def __init__(self, master: tk.Tk):
+    def __init__(self, master: main_gui.SpectrometerGUI):
         BaseSpectrometer.__init__(self)
         self.master = master
         self.settings = device_settings.DeviceSettings_AS7262(self)
@@ -55,3 +56,8 @@ class AS7262(BaseSpectrometer):
 
     def stop_read(self):
         self.master.after_cancel(self.reading)
+
+    def read_once(self):
+        self.usb.usb_write("AS7262|READ_SINGLE")
+        data = self.usb.read_all_data()
+        self.master.update_graph(data)

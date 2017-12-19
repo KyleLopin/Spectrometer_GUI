@@ -120,3 +120,7 @@ class DeviceSettings_AS7262(object):
             self.device.start_continuous_read()
         else:
             self.device.stop_read()
+
+    def single_read(self):
+        print('read once')
+        self.device.read_once()

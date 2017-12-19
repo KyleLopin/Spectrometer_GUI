@@ -3,18 +3,13 @@ The data is saved in the data_class file, pyplot_embed has a matplotlib graph em
 display the data and usb_comm communicates with the device."""
 
 # standard libraries
-import array
-import datetime
 import logging
-import os
-import time
 import tkinter as tk
 # installed libraries
 # local files
 import device_settings
 import psoc_spectrometers
 import pyplot_embed
-import usb_comm
 
 __author__ = 'Kyle Vitautas Lopin'
 
@@ -42,12 +37,15 @@ class SpectrometerGUI(tk.Tk):
         status_frame = StatusFrame(self, self.device)
         status_frame.pack(side='top', fill=tk.X)
 
+    def update_graph(self, counts: tuple):
+        self.graph.update_counts_data(counts)
+
 
 BUTTON_PADY = 7
 
 
 class ButtonFrame(tk.Frame):
-    def __init__(self, parent: tk.Tk, settings: device_settings.DeviceSettings_AS7262):
+    def __init__(self, parent: tk.Frame, settings):  # device_settings.DeviceSettings_AS7262):
         tk.Frame.__init__(self, parent)
         self.master = parent
         self.settings = settings
@@ -84,6 +82,9 @@ class ButtonFrame(tk.Frame):
 
         self.LED_button = tk.Button(self, text="Turn LED On", command=self.LED_toggle)
         self.LED_button.pack(side='top', pady=BUTTON_PADY)
+
+        self.read_button = tk.Button(self, text="Read", command=self.read_once)
+        self.read_button.pack(side="top", pady=BUTTON_PADY)
 
         self.run_button = tk.Button(self, text="Start Reading", command=self.run_toggle)
         self.run_button.pack(side="top", pady=BUTTON_PADY)
@@ -138,9 +139,12 @@ class ButtonFrame(tk.Frame):
     def average_reads(self):
         print("average read: ", self.settings.average_reads.get())
 
+    def read_once(self):
+        self.settings.single_read()
+
 
 class StatusFrame(tk.Frame):
-    def __init__(self, parent: tk.Tk, device: psoc_spectrometers.AS7262):
+    def __init__(self, parent: tk.Tk, device):  # psoc_spectrometers.AS7262()):
         tk.Frame.__init__(self, parent)
         status_str = tk.StringVar()
         if device.usb.spectrometer:

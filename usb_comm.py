@@ -5,6 +5,7 @@
 # standard libraries
 import logging
 import random
+import struct
 import threading
 # installed libraries
 import usb
@@ -69,7 +70,7 @@ class PSoC_USB(object):
         self.connected = True
 
         # first test if the PSoC is connected correctly
-        self.usb_write("I")  # device should identify itself
+        self.usb_write("ID")  # device should identify itself; only the first I is important
         received_message = self.usb_read_data(encoding='string')
         logging.debug('Received identifying message: {0}'.format(received_message))
         if received_message != PSOC_ID_MESSAGE:
@@ -79,7 +80,7 @@ class PSoC_USB(object):
             return
         logging.debug("PSoC send correct message")
         # test for the spectrometer if the PSoC is connected
-        self.usb_write('i')  # device will return string of the spectrometer it is connected to
+        self.usb_write('ID-Spectrometer')  # device will return string of the spectrometer it is connected to
         received_message = self.usb_read_data(encoding='string')
         logging.debug('Received identifying message: {0}'.format(received_message))
         if received_message == AS7262_ID_MESSAGE:
@@ -126,16 +127,17 @@ class PSoC_USB(object):
         if encoding == 'uint16':
             pass
             # return convert_uint8_uint16(usb_input)
-        elif encoding == "signed int16":
-            pass
-            # return convert_uint8_to_signed_int16(usb_input)
+        elif encoding == "float32":
+            # return struct.iter_unpack('f', usb_input)
+            return struct.unpack('>ffffff', usb_input)
         elif encoding == 'string':
             return usb_input.tostring()  # remove the 0x00 end of string
         else:  # no encoding so just return raw data
             return usb_input
 
-    def read_data(self):
+    def read_all_data(self):
         # mock a data read now
+        return self.usb_read_data(num_usb_bytes=24, encoding="float32")
 
 
 
