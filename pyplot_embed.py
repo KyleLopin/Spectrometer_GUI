@@ -45,4 +45,5 @@ class SpectroPlotter(tk.Frame):
         if self.lines:
             self.lines.set_ydata(counts)
         else:
-            self.lines = self.axis.plot(WAVELENGTH, counts)
+            self.lines, = self.axis.plot(WAVELENGTH, counts)
+        self.canvas.draw()
