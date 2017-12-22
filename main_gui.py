@@ -10,6 +10,7 @@ import tkinter as tk
 import device_settings
 import psoc_spectrometers
 import pyplot_embed
+import reg_toplevel
 
 __author__ = 'Kyle Vitautas Lopin'
 
@@ -34,11 +35,17 @@ class SpectrometerGUI(tk.Tk):
         self.buttons_frame.pack(side='left', padx=10)
 
         # make the status frame with the connect button and status information
-        status_frame = StatusFrame(self, self.device)
-        status_frame.pack(side='top', fill=tk.X)
+        self.status_frame = StatusFrame(self, self.device)
+        self.status_frame.pack(side='top', fill=tk.X)
 
     def update_graph(self, counts: tuple):
         self.graph.update_counts_data(counts)
+
+    def device_not_working(self):
+        self.status_frame.update_status("Error reading device")
+
+    def write_message(self, message):
+        self.device.usb.usb_write(message)
 
 
 BUTTON_PADY = 7
@@ -83,11 +90,14 @@ class ButtonFrame(tk.Frame):
         self.LED_button = tk.Button(self, text="Turn LED On", command=self.LED_toggle)
         self.LED_button.pack(side='top', pady=BUTTON_PADY)
 
-        self.read_button = tk.Button(self, text="Read", command=self.read_once)
+        self.read_button = tk.Button(self, text="Single Read", command=self.read_once)
         self.read_button.pack(side="top", pady=BUTTON_PADY)
 
         self.run_button = tk.Button(self, text="Start Reading", command=self.run_toggle)
         self.run_button.pack(side="top", pady=BUTTON_PADY)
+
+        tk.Button(self, text="Register Check", command=lambda: reg_toplevel.RegDebugger(self.master, settings.device)
+                  ).pack(side="top", pady=BUTTON_PADY)
 
     # def validate_integration_time(self):
     #     """ Force the integration time variable to be a integral of 5.6 ms that the device uses """
@@ -146,18 +156,22 @@ class ButtonFrame(tk.Frame):
 class StatusFrame(tk.Frame):
     def __init__(self, parent: tk.Tk, device):  # psoc_spectrometers.AS7262()):
         tk.Frame.__init__(self, parent)
-        status_str = tk.StringVar()
+        self.status_str = tk.StringVar()
         if device.usb.spectrometer:
-            status_str.set("Spectrometer: {0} connected".format(device.usb.spectrometer))
+            self.status_str.set("Spectrometer: {0} connected".format(device.usb.spectrometer))
         elif device.usb.connected:
-            status_str.set("Sensor not found on PSoC")
+            self.status_str.set("Sensor not found on PSoC")
         elif device.usb.found:
-            status_str.set("Device found but not responding properly")
+            self.status_str.set("Device found but not responding properly")
         else:
-            status_str.set("No device found")
+            self.status_str.set("No device found")
 
-        status_label = tk.Label(self, textvariable=status_str)
-        status_label.pack(side='left')
+        self.status_label = tk.Label(self, textvariable=self.status_str)
+        self.status_label.pack(side='left')
+
+    def update_status(self, message):
+        self.status_str.set(message)
+        self.status_label = tk.Label(self, textvariable=self.status_str)
 
 
 if __name__ == '__main__':
