@@ -46,21 +46,36 @@ class AS7262(BaseSpectrometer):
         self.usb.usb_write("SET_CONT_READ_PERIOD|{0}".format(str(int(read_period_ms)).zfill(5)))
 
     def start_continuous_read(self):
-        self.reading = self.master.after(int((self.settings.read_period-100)), self.reading_run)
+        # self.reading = self.master.after(int((self.settings.read_period-100)), self.reading_run)
         self.usb.usb_write("AS7262|START")
+        self.reading = True
+        self.reading_run()
 
     def reading_run(self):
-        self.reading = self.master.after((self.settings.read_period - 100), self.reading_run)
-        print("try to read", time.time())
-        self.usb.read_data()
+        # self.reading = self.master.after((self.settings.read_period - 100), self.reading_run)
+        # print("try to read", time.time())
+        if self.reading:
+            self.read_once()
+            self.master.after(int(self.settings.read_period - 100), self.reading_run)
 
     def stop_read(self):
-        self.master.after_cancel(self.reading)
+        # self.master.after_cancel(self.reading)
+        self.reading = False
 
     def read_once(self):
         self.usb.usb_write("AS7262|READ_SINGLE")
+
         data = self.usb.read_all_data()
         if data:
             self.master.update_graph(data)
         else:
             self.master.device_not_working()
+
+    def set_LED_power(self, LED_on):
+        var_str = "OFF"
+        if LED_on:
+            var_str = "ON"
+        self.usb.usb_write("AS7262|LED_CTRL|{0}".format(var_str))
+
+    def set_LED_power_level(self, power_level):
+        self.usb.usb_write("AS7262|POWER_LEVEL|{0}".format(power_level))

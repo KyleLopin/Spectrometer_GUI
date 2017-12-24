@@ -64,7 +64,8 @@ class ButtonFrame(tk.Frame):
         tk.OptionMenu(self, settings.gain_var, *gain_var_options).pack(side='top', pady=BUTTON_PADY)
 
         tk.Label(self, text="Integration time (ms):").pack(side='top', pady=BUTTON_PADY)
-        integration_time_var = ["{:.1f}".format(x*5.6) for x in range(255)]
+        custom_range = [1, 2, 4, 8, 16, 32, 64, 128, 255]
+        integration_time_var = ["{:.1f}".format(x*5.6) for x in custom_range]
         # tk.Spinbox(self, format="%.1f", from_=5.6, to=1428, increment=5.6,
         #            textvariable=settings.integration_time_var, command=self.validate_integration_time
         #            ).pack(side='top', pady=20)
@@ -77,6 +78,9 @@ class ButtonFrame(tk.Frame):
         # frequency_options = device_settings.READ_RATE_MAP.keys()
         self.freq_menu = tk.OptionMenu(self, settings.read_period_var, *self.frequency_options)
         self.freq_menu.pack(side='top', pady=BUTTON_PADY)
+
+        # fix the frequency menu options
+        self.integration_time_set(settings.integration_time)
 
         tk.Checkbutton(self, text="Integrate multiple reads", variable=settings.average_reads,
                        command=self.average_reads, onvalue=True, offvalue=False).pack(side='top', pady=BUTTON_PADY)
@@ -138,6 +142,8 @@ class ButtonFrame(tk.Frame):
             self.LED_button.config(text="Turn LED off", relief=tk.RAISED)
 
     def run_toggle(self):
+
+        # self.settings.reading is traced to device settings method toggle_read
         if self.settings.reading.get():
             self.settings.reading.set(False)
             self.run_button.config(text="Start Reading")

@@ -24,7 +24,13 @@ REGISTERS = {"HW_VERSION1": "0x00",
              "V_Cal 1": "0x14",
              "V_Cal 2": "0x15",
              "V_Cal 3": "0x16",
-             "V_Cal 4": "0x17"}
+             "V_Cal 4": "0x17",
+             "R_High": "0x12",
+             "R Low": "0x13",
+             "R_Cal 1": "0x28",
+             "R_Cal 2": "0x29",
+             "R_Cal 3": "0x2A",
+             "R_Cal 4": "0x2B"}
 
 
 class RegDebugger(tk.Toplevel):

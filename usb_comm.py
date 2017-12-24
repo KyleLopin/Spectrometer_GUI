@@ -105,7 +105,9 @@ class PSoC_USB(object):
         if not num_usb_bytes:
             num_usb_bytes = self.master_device.USB_INFO_BYTE_SIZE
 
-    def usb_read_data(self, num_usb_bytes=USB_DATA_BYTE_SIZE, endpoint=IN_ENDPOINT, encoding=None):
+    def usb_read_data(self, num_usb_bytes=USB_DATA_BYTE_SIZE,
+                      endpoint=IN_ENDPOINT, encoding=None,
+                      timeout=3000):
         """ Read data from the usb and return it, if the read fails, log the miss and return None
         :param num_usb_bytes: number of bytes to read
         :param endpoint: hexidecimal of endpoint to read, has to be formatted as 0x8n where
@@ -118,7 +120,7 @@ class PSoC_USB(object):
             logging.info("not working")
             return None
         try:
-            usb_input = self.device.read(endpoint, num_usb_bytes, 2000)  # TODO fix this
+            usb_input = self.device.read(endpoint, num_usb_bytes, timeout)  # TODO fix this
             print(usb_input)
         except Exception as error:
             logging.error("Failed data read")

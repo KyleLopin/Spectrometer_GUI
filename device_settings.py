@@ -57,7 +57,7 @@ class DeviceSettings_AS7262(object):
         self.device = device
         self.gain = GainSetting.GAIN_SETTING_1X
         self.measurement_mode = BankMode.BANK_MODE_3.value
-        self.integration_time = 5.6
+        self.integration_time = 5.6 * 255
         self.LED_power_level = LEDPowerSetting.LED_POWER_12_5_mA
         self.LED_on = False
         self.ind_power_level = IndPowerSetting.IND_POWER_1_mA
@@ -103,6 +103,7 @@ class DeviceSettings_AS7262(object):
         print("Got LED power: ", self.LED_power_level_var.get())
         self.LED_power_level = LED_POWER_MAP[self.LED_power_level_var.get()]
         print("New LED power level: ", self.LED_power_level.value)
+        self.device.set_LED_power_level(self.LED_power_level.value)
 
     def toggle_LED(self, turn_LED_on: bool):
         if turn_LED_on:
@@ -110,6 +111,7 @@ class DeviceSettings_AS7262(object):
         else:
             self.LED_on = False
         print("Led: ", self.LED_on)
+        self.device.set_LED_power(self.LED_on)
 
     def read_period_set(self, *args):
         self.read_period = 1000.0 * float(self.read_period_var.get().split()[0])
