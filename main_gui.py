@@ -31,7 +31,7 @@ class SpectrometerGUI(tk.Tk):
         self.graph = pyplot_embed.SpectroPlotter(main_frame, None)
         self.graph.pack(side='left', fill=tk.BOTH, expand=True)
 
-        self.buttons_frame = ButtonFrame(main_frame, self.settings)
+        self.buttons_frame = ButtonFrame(main_frame, self.settings, self.graph)
         self.buttons_frame.pack(side='left', padx=10)
 
         # make the status frame with the connect button and status information
@@ -52,10 +52,11 @@ BUTTON_PADY = 7
 
 
 class ButtonFrame(tk.Frame):
-    def __init__(self, parent: tk.Frame, settings):  # device_settings.DeviceSettings_AS7262):
+    def __init__(self, parent: tk.Frame, settings, graph):  # device_settings.DeviceSettings_AS7262):
         tk.Frame.__init__(self, parent)
         self.master = parent
         self.settings = settings
+        self.graph = graph
 
         # make all the buttons and parameters
         tk.Label(self, text="Gain Setting:").pack(side='top', pady=BUTTON_PADY)
@@ -69,21 +70,21 @@ class ButtonFrame(tk.Frame):
         # tk.Spinbox(self, format="%.1f", from_=5.6, to=1428, increment=5.6,
         #            textvariable=settings.integration_time_var, command=self.validate_integration_time
         #            ).pack(side='top', pady=20)
-        tk.OptionMenu(self, settings.integration_time_var, *integration_time_var,
-                      command=self.integration_time_set).pack(side='top', pady=BUTTON_PADY)
+        tk.OptionMenu(self, settings.integration_time_var, *integration_time_var).pack(side='top', pady=BUTTON_PADY)
+                      # command=self.integration_time_set).pack(side='top', pady=BUTTON_PADY)
 
-        # make read frequency rate
-        tk.Label(self, text="Set read rate:").pack(side='top', pady=BUTTON_PADY)
-        self.frequency_options = ["0.2 sec", "0.5 sec", "1 sec", "5 sec", "10 sec", "30 sec"]
-        # frequency_options = device_settings.READ_RATE_MAP.keys()
-        self.freq_menu = tk.OptionMenu(self, settings.read_period_var, *self.frequency_options)
-        self.freq_menu.pack(side='top', pady=BUTTON_PADY)
+        # # make read frequency rate
+        # tk.Label(self, text="Set read rate:").pack(side='top', pady=BUTTON_PADY)
+        # self.frequency_options = ["0.2 sec", "0.5 sec", "1 sec", "5 sec", "10 sec", "30 sec"]
+        # # frequency_options = device_settings.READ_RATE_MAP.keys()
+        # self.freq_menu = tk.OptionMenu(self, settings.read_period_var, *self.frequency_options)
+        # self.freq_menu.pack(side='top', pady=BUTTON_PADY)
 
         # fix the frequency menu options
-        self.integration_time_set(settings.integration_time)
+        # self.integration_time_set(settings.integration_time)
 
-        tk.Checkbutton(self, text="Integrate multiple reads", variable=settings.average_reads,
-                       command=self.average_reads, onvalue=True, offvalue=False).pack(side='top', pady=BUTTON_PADY)
+        # tk.Checkbutton(self, text="Integrate multiple reads", variable=settings.average_reads,
+        #                command=self.average_reads, onvalue=True, offvalue=False).pack(side='top', pady=BUTTON_PADY)
 
         # make LED control widgets
         tk.Label(self, text="LED power (mA):").pack(side='top', pady=BUTTON_PADY)
@@ -100,6 +101,8 @@ class ButtonFrame(tk.Frame):
         self.run_button = tk.Button(self, text="Start Reading", command=self.run_toggle)
         self.run_button.pack(side="top", pady=BUTTON_PADY)
 
+        tk.Button(self, text="Save Data", command=self.save_data).pack(side="top", pady=BUTTON_PADY)
+
         tk.Button(self, text="Register Check", command=lambda: reg_toplevel.RegDebugger(self.master, settings.device)
                   ).pack(side="top", pady=BUTTON_PADY)
 
@@ -109,20 +112,20 @@ class ButtonFrame(tk.Frame):
     #     new_value = int(float(self.settings.integration_time_var.get()) / 5.6) * 5.6
     #     self.settings.integration_time_var.set("{:.1f}".format(new_value))
 
-    def integration_time_set(self, int_time):
-        integration_time = float(int_time)/1000.0
-        if integration_time > 1.0:
-            new_freq_set = ["{0:.3f} sec".format(integration_time)]
-            new_freq_set.extend(self.frequency_options[3:])
-        elif integration_time > 0.5:
-            new_freq_set = ["{0:.3f} sec".format(integration_time)]
-            new_freq_set.extend(self.frequency_options[2:])
-        elif integration_time > 0.2:
-            new_freq_set = ["{0:.3f} sec".format(integration_time)]
-            new_freq_set.extend(self.frequency_options[1:])
-        else:
-            new_freq_set = self.frequency_options
-        self.update_freq_menu(new_freq_set)
+    # def integration_time_set(self, int_time):
+    #     integration_time = float(int_time)/1000.0
+    #     # if integration_time > 1.0:
+    #     #     new_freq_set = ["{0:.3f} sec".format(integration_time)]
+    #     #     new_freq_set.extend(self.frequency_options[3:])
+    #     # elif integration_time > 0.5:
+    #     #     new_freq_set = ["{0:.3f} sec".format(integration_time)]
+    #     #     new_freq_set.extend(self.frequency_options[2:])
+    #     # elif integration_time > 0.2:
+    #     #     new_freq_set = ["{0:.3f} sec".format(integration_time)]
+    #     #     new_freq_set.extend(self.frequency_options[1:])
+    #     # else:
+    #     #     new_freq_set = self.frequency_options
+    #     self.update_freq_menu(new_freq_set)
 
     def update_freq_menu(self, new_set):
         menu = self.freq_menu["menu"]
@@ -136,10 +139,10 @@ class ButtonFrame(tk.Frame):
         if self.settings.LED_on:
             # turn off the LED and change the button
             self.settings.toggle_LED(False)
-            self.LED_button.config(text="Turn LED on", relief=tk.SUNKEN)
+            self.LED_button.config(text="Turn LED on", relief=tk.RAISED)
         else:
             self.settings.toggle_LED(True)
-            self.LED_button.config(text="Turn LED off", relief=tk.RAISED)
+            self.LED_button.config(text="Turn LED off", relief=tk.SUNKEN)
 
     def run_toggle(self):
 
@@ -157,6 +160,10 @@ class ButtonFrame(tk.Frame):
 
     def read_once(self):
         self.settings.single_read()
+
+    def save_data(self):
+        print("save the data: ")
+        self.graph.data.save_data()
 
 
 class StatusFrame(tk.Frame):

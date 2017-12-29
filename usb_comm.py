@@ -4,6 +4,7 @@
 
 # standard libraries
 import logging
+import queue
 import random
 import struct
 import threading
@@ -27,13 +28,22 @@ __author__ = 'Kyle Vitautas Lopin'
 
 
 class PSoC_USB(object):
-    def __init__(self, master, vendor_id=0x04B4, product_id=0x8051):
+    def __init__(self, master, queue: queue.Queue, event: threading.Event(),
+                 termination_flag: bool,
+                 vendor_id=0x04B4, product_id=0x8051):
         self.master_device = master
         self.found = False
         self.connected = False
         self.spectrometer = None
         self.device = self.connect_usb(vendor_id, product_id)
         self.connection_test()
+        # data_processing_function([1])
+        # make an extra thread to poll the usb as this thread will hang on the timeouts of the usb
+        self.data_ready_event = event
+        self.data_queue = queue
+        self.data_aquire_thread = ThreadedUSBDataCollector(self, master, self.data_queue,
+                                                           self.data_ready_event,
+                                                           termination_flag)
 
     def connect_usb(self, vendor_id, product_id):
         """
@@ -130,8 +140,11 @@ class PSoC_USB(object):
             pass
             # return convert_uint8_uint16(usb_input)
         elif encoding == "float32":
-            # return struct.iter_unpack('f', usb_input)
-            return struct.unpack('>ffffff', usb_input)
+            if (len(usb_input) % 4) == 0:
+                # return struct.iter_unpack('f', usb_input)
+                return struct.unpack('>ffffff', usb_input)
+            else:
+                print("Error in reading")
         elif encoding == 'string':
             return usb_input.tostring()  # remove the 0x00 end of string
         else:  # no encoding so just return raw data
@@ -141,8 +154,52 @@ class PSoC_USB(object):
         # mock a data read now
         return self.usb_read_data(num_usb_bytes=24, encoding="float32")
 
+    def start_reading(self):
+        pass
 
 
 class ThreadedUSBDataCollector(threading.Thread):
-    def __init__(self, device: PSoC_USB):
+    def __init__(self, device: PSoC_USB, master: 'psoc_spectrometers.BaseSpectrometer()',
+                 data_queue: queue.Queue, data_event: threading.Event,
+                 function_call=None, termination_flag=False):
+        threading.Thread.__init__(self)
+        self.device = device
+        self.master = master
+        self.data_queue = data_queue
+        self.data_event = data_event
+        # self.func_call = function_call
+        self.running = True  # bool: Flag to know when the data read should stop
+        self.termination_flag = termination_flag  # Flag to know when the thread should stop
+
+    def run(self):
+        """ Poll the USB for new data packets and pass it through the queue and set the event flag so the main
+        program will update the graph.  Structure the program so if the termination flag is set, collect the last
+        data point to clear the data from the sensor."""
+
+        while not self.termination_flag:
+            logging.debug("In data collection thread")
+            if self.running:
+                data = self.device.read_all_data()
+                logging.debug("Got data: {0}".format(data))
+                # make sure there is data and that the previous data has been processed
+                # if data and self.data_queue.empty():
+                #     self.data_queue.put(data)
+                #     self.data_event.set()
+                if data:
+                    # self.func_call(data)
+                    self.master.data_processing(data)
+                elif not data:
+                    self.termination_flag = True
+                    logging.error("=================== Device not working =====================")
+            else:  # the main program wants to stop the program
+                self.termination_flag = True
+        logging.debug("exiting data thread call: {0}".format(self.termination_flag, hex(id(self.termination_flag))))
+        print(hex(id(self.termination_flag)))
+        self.data_event.set()  # let the main program exit the data_read wait loop
+
+    def stop_running(self):
+        logging.debug("Stopping data stream")
+        self.running = False
+
+    def single_run(self):
         pass

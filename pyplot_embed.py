@@ -1,23 +1,27 @@
+# Copyright (c) 2017-2018 Kyle Lopin (Naresuan University) <kylel@nu.ac.th>
+
 """ Embedded matplotlib plot in a tkinter frame """
 
+#standard libraries
 import tkinter as tk
-import tkinter.constants
-import numpy as np
+
+# installed libraries
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib import pyplot as plt
-import matplotlib.animation as animation
+# local files
+import data_class
 
 __author__ = 'Kyle Vitautas Lopin'
 
-COUNT_SCALE = [10, 20, 50, 100, 200, 500]
+COUNT_SCALE = [10, 20, 50, 100, 200, 500, 1000, 5000, 10000, 50000, 100000]
 WAVELENGTH = [450, 500, 550, 570, 600, 650]
 
 class SpectroPlotter(tk.Frame):
-    def __init__(self, parent, data, _size=(6, 3)):
+    def __init__(self, parent, _size=(6, 3)):
         tk.Frame.__init__(self, master=parent)
-        self.data = data
+        self.data = data_class.SpectrometerData(WAVELENGTH)
         self.scale_index = 3
 
         # routine to make and embed the matplotlib graph
@@ -43,7 +47,7 @@ class SpectroPlotter(tk.Frame):
         self.lines = None
 
     def update_counts_data(self, counts):
-        print("update: ", counts)
+        print("update: ", counts, self.scale_index, COUNT_SCALE[self.scale_index], max(counts))
         while max(counts) > COUNT_SCALE[self.scale_index]:
             self.scale_index += 1
             self.axis.set_ylim([0, COUNT_SCALE[self.scale_index]])
@@ -55,3 +59,7 @@ class SpectroPlotter(tk.Frame):
         else:
             self.lines, = self.axis.plot(WAVELENGTH, counts)
         self.canvas.draw()
+        self.save_data(counts)
+
+    def save_data(self, data):
+        self.data.update_data(data)

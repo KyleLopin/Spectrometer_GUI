@@ -1,5 +1,6 @@
 # standard libraries
 from enum import Enum
+import logging
 import tkinter as tk
 
 # local files
@@ -119,6 +120,8 @@ class DeviceSettings_AS7262(object):
 
     def toggle_read(self, *args):
         if self.reading.get():  # has just been set to true
+            # run_integration_time = max(self.integration_time, 200)
+            # logging.debug("starting continuous read with integration time: {0}".format(run_integration_time))
             self.device.start_continuous_read()
         else:
             self.device.stop_read()

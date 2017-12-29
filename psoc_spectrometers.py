@@ -4,8 +4,9 @@
 AS7262"""
 
 # standard libraries
-import time
-import tkinter as tk
+import logging
+import queue
+import threading
 
 # local files
 import device_settings
@@ -24,16 +25,30 @@ class BaseSpectrometer(object):
         self.DATA_IN_ENDPOINT = 3
         self.USB_INFO_BYTE_SIZE = 32
 
-        self.usb = usb_comm.PSoC_USB(self)
+        # the data reading from the USB will be on a separate thread so that polling
+        # the USB will not make the program hang.
+        self.data_queue = queue.Queue()
+        self.data_acquired_event = threading.Event()
+        self.termination_flag = False  # flag to set when streaming data should be stopped
+
+        self.usb = usb_comm.PSoC_USB(self, self.data_queue, self.data_acquired_event,
+                                     self.termination_flag)
+
+    def data_process(self, *args):
+        print("original process_data")
+        pass
 
 
 class AS7262(BaseSpectrometer):
     def __init__(self, master: main_gui.SpectrometerGUI):
-        BaseSpectrometer.__init__(self)
         self.master = master
+        BaseSpectrometer.__init__(self)
+
         self.settings = device_settings.DeviceSettings_AS7262(self)
         self.integration_time_per_cycle = 5.6  # ms
         self.reading = None
+        self.after_delay = int(max(float(self.settings.integration_time), 200))
+        self.currently_running = False
 
     def set_gain(self, gain_setting):
         self.usb.usb_write("AS7262|GAIN|{0}".format(gain_setting))
@@ -41,15 +56,37 @@ class AS7262(BaseSpectrometer):
     def set_integration_time(self, integration_time_ms):
         integration_cycles = int(integration_time_ms / self.integration_time_per_cycle)
         self.usb.usb_write("AS7622|INTEGRATE_TIME|{0}".format(str(integration_cycles).zfill(3)))
+        self.after_delay = int(max(float(self.settings.integration_time), 200))
 
     def set_read_period(self, read_period_ms: float):
         self.usb.usb_write("SET_CONT_READ_PERIOD|{0}".format(str(int(read_period_ms)).zfill(5)))
 
     def start_continuous_read(self):
-        # self.reading = self.master.after(int((self.settings.read_period-100)), self.reading_run)
-        self.usb.usb_write("AS7262|START")
+        print("starting to read with rate: ", self.after_delay)
         self.reading = True
         self.reading_run()
+        # if self.reading:
+        #     self.read_once()
+        #     self.master.after(self.after_delay, self.start_continuous_read)
+
+
+        # print("starting to read with rate: ", self.after_delay)
+        # self.usb.usb_write("AS7262|CONTINUOUS_READ")
+        # while not self.termination_flag:
+        #     self.master.after(self.after_delay, self.start_continuous_read)
+        #     if not self.currently_running:
+        #         self.read_once()
+        # logging.debug("exiting data read")
+
+        # self.reading = self.master.after(int((self.settings.read_period-100)), self.reading_run)
+        # self.master.after(self.after_delay, self.start_continuous_read)
+        # self.read_once()
+        # self.usb.usb_write("AS7262|CONTINUOUS_READ")
+        # print("starting continuous read")
+        # print("time for after: ", max(self.settings.integration_time, 200))
+        # self.reading = True
+        # self.usb.data_aquire_thread.start()
+        # self.data_read()
 
     def reading_run(self):
         # self.reading = self.master.after((self.settings.read_period - 100), self.reading_run)
@@ -58,8 +95,33 @@ class AS7262(BaseSpectrometer):
             self.read_once()
             self.master.after(int(self.settings.read_period - 100), self.reading_run)
 
+    # def stop_read(self):
+    #     # self.master.after_cancel(self.reading)
+    #     self.reading = False
+    def data_read(self):
+        while not self.termination_flag:
+            logging.debug("data read call: {0}".format(self.termination_flag, hex(id(self.termination_flag))))
+            print(hex(id(self.termination_flag)))
+            self.data_acquired_event.wait(timeout=0.2)  # wait for the usb communication thread to
+            self.data_acquired_event.clear()
+            if not self.data_queue.empty():  # make sure there is data in the queue to process
+                new_data = self.data_queue.get()
+                print("got data queue: ", new_data)
+                self.master.update_graph(new_data)
+
+        logging.debug("exiting data read")
+
+        # while not self.termination_flag:
+        #     new_data = self.data_queue.get()
+        #     print("got data queue: ", new_data)
+        #     self.master.update_graph(new_data)
+        # logging.debug("exiting data read")
+
+    def data_process(self, _data):
+        self.master.update_graph(_data)
+
     def stop_read(self):
-        # self.master.after_cancel(self.reading)
+        # self.usb.usb_write("AS7262|STOP")
         self.reading = False
 
     def read_once(self):
@@ -79,3 +141,17 @@ class AS7262(BaseSpectrometer):
 
     def set_LED_power_level(self, power_level):
         self.usb.usb_write("AS7262|POWER_LEVEL|{0}".format(power_level))
+
+
+class ThreadedDataLoop(threading.Thread):
+    def __init__(self, queue, event, flag):
+        self.comm_queue = queue
+        self.comm_event = event
+        self.termination_flag = flag
+
+    def run(self):
+        while not self.termination_flag:
+            new_data = self.comm_queue.get()
+            print("got data queue: ", new_data)
+            self.master.update_graph(new_data)
+        logging.debug("Ending threaded data loop")
