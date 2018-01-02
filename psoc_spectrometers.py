@@ -1,12 +1,12 @@
 # Copyright (c) 2017-2018 Kyle Lopin (Naresuan University) <kylel@nu.ac.th>
 
-""" Classes to represent different color spectrometers, implimented so far
-AS7262"""
+""" Classes to represent different color spectrometers, implimented so far: AS7262"""
 
 # standard libraries
 import logging
 import queue
 import threading
+import tkinter as tk
 
 # local files
 import device_settings
@@ -65,28 +65,6 @@ class AS7262(BaseSpectrometer):
         print("starting to read with rate: ", self.after_delay)
         self.reading = True
         self.reading_run()
-        # if self.reading:
-        #     self.read_once()
-        #     self.master.after(self.after_delay, self.start_continuous_read)
-
-
-        # print("starting to read with rate: ", self.after_delay)
-        # self.usb.usb_write("AS7262|CONTINUOUS_READ")
-        # while not self.termination_flag:
-        #     self.master.after(self.after_delay, self.start_continuous_read)
-        #     if not self.currently_running:
-        #         self.read_once()
-        # logging.debug("exiting data read")
-
-        # self.reading = self.master.after(int((self.settings.read_period-100)), self.reading_run)
-        # self.master.after(self.after_delay, self.start_continuous_read)
-        # self.read_once()
-        # self.usb.usb_write("AS7262|CONTINUOUS_READ")
-        # print("starting continuous read")
-        # print("time for after: ", max(self.settings.integration_time, 200))
-        # self.reading = True
-        # self.usb.data_aquire_thread.start()
-        # self.data_read()
 
     def reading_run(self):
         # self.reading = self.master.after((self.settings.read_period - 100), self.reading_run)
@@ -95,9 +73,6 @@ class AS7262(BaseSpectrometer):
             self.read_once()
             self.master.after(int(self.settings.read_period - 100), self.reading_run)
 
-    # def stop_read(self):
-    #     # self.master.after_cancel(self.reading)
-    #     self.reading = False
     def data_read(self):
         while not self.termination_flag:
             logging.debug("data read call: {0}".format(self.termination_flag, hex(id(self.termination_flag))))
@@ -110,12 +85,6 @@ class AS7262(BaseSpectrometer):
                 self.master.update_graph(new_data)
 
         logging.debug("exiting data read")
-
-        # while not self.termination_flag:
-        #     new_data = self.data_queue.get()
-        #     print("got data queue: ", new_data)
-        #     self.master.update_graph(new_data)
-        # logging.debug("exiting data read")
 
     def data_process(self, _data):
         self.master.update_graph(_data)
@@ -155,3 +124,6 @@ class ThreadedDataLoop(threading.Thread):
             print("got data queue: ", new_data)
             self.master.update_graph(new_data)
         logging.debug("Ending threaded data loop")
+
+
+class ConnectionStatusToplevel(tk.Toplevel):
