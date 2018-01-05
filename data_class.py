@@ -35,10 +35,9 @@ class SaveTopLevel(tk.Toplevel):
         self.data_string = tk.StringVar()
 
         _data_string = "Wavelength, counts\n"
-        print(wavelength_data)
         for i, _data in enumerate(wavelength_data):
-            _data_string += "\n".join([_data, light_data[i]])
+            _data_string += "{0}, {1:4.2f}\n".format(_data, light_data[i])
 
-        print(_data_string)
-
-        tk.Entry(self, text=_data_string, width=20, heigth=8).pack()
+        text_box = tk.Text(self, width=20, height=8)
+        text_box.insert(tk.END, _data_string)
+        text_box.pack()

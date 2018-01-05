@@ -54,7 +54,7 @@ class SpectrometerGUI(tk.Tk):
         self.graph.pack(side='left', fill=tk.BOTH, expand=True)
 
         # make command buttons
-        self.buttons_frame = ButtonFrame(main_frame, self.settings, self.graph)
+        self.buttons_frame = ButtonFrame(main_frame, self.settings, self.graph, self.device)
         self.buttons_frame.pack(side='left', padx=10)
 
         # make the status frame with the connect button and status information
@@ -93,7 +93,7 @@ class ButtonFrame(tk.Frame):
     """ Frame to contain all the buttons the user can use to control the settings and use of the device """
 
     def __init__(self, parent: tk.Frame, settings,  # device_settings.DeviceSettings_AS7262): type hinting issue
-                 graph: pyplot_embed.SpectroPlotter):
+                 graph: pyplot_embed.SpectroPlotter, device):
         """
         Class to make all the buttons needed to control a AS7262 sensor that is controlled by a PSoC.
 
@@ -106,6 +106,7 @@ class ButtonFrame(tk.Frame):
         self.master = parent
         self.settings = settings  # type: device_settings.DeviceSettings_AS7262
         self.graph = graph
+        self.device = device  # type: psoc_spectrometers.AS7262
 
         # make all the buttons and parameters
         # Gain settings
@@ -135,6 +136,11 @@ class ButtonFrame(tk.Frame):
         self.read_button = tk.Button(self, text="Single Read", command=self.read_once)
         self.read_button.pack(side="top", pady=BUTTON_PADY)
 
+        # make a check box for if the LED should be flashed
+        self.use_flash = tk.IntVar()
+        self.flash_checkbutton = tk.Checkbutton(self, text="Use flash", variable=self.use_flash)
+        self.flash_checkbutton.pack(side="top", pady=BUTTON_PADY)
+
         # button to continuously read from the sensor
         self.run_button = tk.Button(self, text="Start Reading", command=self.run_toggle)
         self.run_button.pack(side="top", pady=BUTTON_PADY)
@@ -155,9 +161,15 @@ class ButtonFrame(tk.Frame):
             # turn off the LED and change the button
             self.settings.toggle_LED(False)
             self.LED_button.config(text="Turn LED on", relief=tk.RAISED)
+
+            # re-activate the LED flash checkbox if it was inactivated earlier
+            self.flash_checkbutton.config(state=tk.ACTIVE)
         else:
             self.settings.toggle_LED(True)
             self.LED_button.config(text="Turn LED off", relief=tk.SUNKEN)
+
+            # inactivate the LED flash checkbox if the LED is already on
+            self.flash_checkbutton.config(state=tk.DISABLED)
 
     def run_toggle(self):
         """
@@ -165,10 +177,13 @@ class ButtonFrame(tk.Frame):
         """
         # self.settings.reading is traced to device settings method toggle_read
         if self.settings.reading.get():
-            self.settings.reading.set(False)
+            # self.settings.reading.set(False)
+            self.device
+
             self.run_button.config(text="Start Reading")
         else:
-            self.settings.reading.set(True)
+            # self.settings.reading.set(True)
+
             self.run_button.config(text="Stop Reading")
 
     def average_reads(self):
@@ -200,6 +215,7 @@ class StatusFrame(tk.Frame):
         :param device:
         """
         tk.Frame.__init__(self, parent)
+        self.device = device  # type: psoc_spectrometers.AS7262
         self.status_str = tk.StringVar()
         if device.usb.spectrometer:
             self.status_str.set("Spectrometer: {0} connected".format(device.usb.spectrometer))
@@ -221,7 +237,7 @@ class StatusFrame(tk.Frame):
     def device_connection_test(self, *args):
         logging.debug("Checking the status of the device")
 
-        self.device.connection_test_toplevel()
+        psoc_spectrometers.ConnectionStatusToplevel()
 
 
 if __name__ == '__main__':

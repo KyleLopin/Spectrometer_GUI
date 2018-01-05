@@ -47,7 +47,6 @@ class SpectroPlotter(tk.Frame):
         self.lines = None
 
     def update_counts_data(self, counts):
-        print("update: ", counts, self.scale_index, COUNT_SCALE[self.scale_index], max(counts))
         while max(counts) > COUNT_SCALE[self.scale_index]:
             self.scale_index += 1
             self.axis.set_ylim([0, COUNT_SCALE[self.scale_index]])

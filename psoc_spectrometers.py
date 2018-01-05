@@ -94,6 +94,7 @@ class AS7262(BaseSpectrometer):
         self.reading = False
 
     def read_once(self):
+
         self.usb.usb_write("AS7262|READ_SINGLE")
 
         data = self.usb.read_all_data()
@@ -127,3 +128,5 @@ class ThreadedDataLoop(threading.Thread):
 
 
 class ConnectionStatusToplevel(tk.Toplevel):
+    def __init__(self):
+        print("open connection test")
