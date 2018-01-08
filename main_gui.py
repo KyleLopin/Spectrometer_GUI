@@ -237,7 +237,7 @@ class StatusFrame(tk.Frame):
     def device_connection_test(self, *args):
         logging.debug("Checking the status of the device")
 
-        psoc_spectrometers.ConnectionStatusToplevel()
+        psoc_spectrometers.ConnectionStatusToplevel(self.status_str)
 
 
 if __name__ == '__main__':

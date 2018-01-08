@@ -128,5 +128,7 @@ class ThreadedDataLoop(threading.Thread):
 
 
 class ConnectionStatusToplevel(tk.Toplevel):
-    def __init__(self):
+    def __init__(self, status_str):
+        tk.Toplevel.__init__(self)
         print("open connection test")
+        tk.Label(self, text=status_str).pack()
