@@ -47,6 +47,12 @@ class IndPowerSetting(Enum):
     IND_POWER_8_mA = 3
 
 
+class DisplayTypes(Enum):
+    counts = "Counts"
+    power = "uW / cm2"
+    concentration = "umol / cm2"
+
+
 READ_RATE_MAP = {"200 ms": 0.2, "500 ms": 0.5, "1 sec": 1, "5 sec": 5,
                  "10 sec": 10, "30 sec": 30}
 
@@ -126,6 +132,6 @@ class DeviceSettings_AS7262(object):
         else:
             self.device.stop_read()
 
-    def single_read(self):
+    def single_read(self, flash=False):
         print('read once')
-        self.device.read_once()
+        self.device.read_once(flash)

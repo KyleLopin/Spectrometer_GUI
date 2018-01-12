@@ -5,6 +5,7 @@ to a PSoC controller.  The data is saved in the data_class file, pyplot_embed ha
 matplotlib graph embedded into a tk.Frame to display the data and usb_comm communicates with the device. """
 
 # standard libraries
+from enum import Enum
 import logging
 import tkinter as tk
 # installed libraries
@@ -15,6 +16,12 @@ import pyplot_embed
 import reg_toplevel
 
 __author__ = 'Kyle Vitautas Lopin'
+
+
+class DisplayTypes(Enum):
+    counts = "Counts"
+    power = "uW / cm2"
+    concentration = "umol / cm2"
 
 
 class SpectrometerGUI(tk.Tk):
@@ -50,7 +57,7 @@ class SpectrometerGUI(tk.Tk):
         self.settings = self.device.settings
 
         # make the graph frame, the parent class is a tk.Frame
-        self.graph = pyplot_embed.SpectroPlotter(main_frame, None)
+        self.graph = pyplot_embed.SpectroPlotter(main_frame, self.settings)
         self.graph.pack(side='left', fill=tk.BOTH, expand=True)
 
         # make command buttons
@@ -111,8 +118,8 @@ class ButtonFrame(tk.Frame):
         # make all the buttons and parameters
         # Gain settings
         tk.Label(self, text="Gain Setting:").pack(side='top', pady=BUTTON_PADY)
-        # gain_var_options = ["1", "3.7", "16", "64"]
-        gain_var_options = device_settings.GAIN_SETTING_MAP.keys()
+        gain_var_options = ["1", "3.7", "16", "64"]
+        # gain_var_options = device_settings.GAIN_SETTING_MAP.keys()
         tk.OptionMenu(self, settings.gain_var, *gain_var_options).pack(side='top', pady=BUTTON_PADY)
 
         # set the integrations time, give them just a few options not the full 255 options
@@ -124,8 +131,8 @@ class ButtonFrame(tk.Frame):
 
         # make LED control widgets
         tk.Label(self, text="LED power (mA):").pack(side='top', pady=BUTTON_PADY)
-        # LED_power_options = ["12.5 mA", "25 mA", "50 mA", "100 mA"]
-        LED_power_options = device_settings.LED_POWER_MAP.keys()
+        LED_power_options = ["12.5 mA", "25 mA", "50 mA", "100 mA"]
+        # LED_power_options = device_settings.LED_POWER_MAP.keys()
         tk.OptionMenu(self, settings.LED_power_level_var, *LED_power_options).pack(side='top', pady=BUTTON_PADY)
 
         self.LED_button = tk.Button(self, text="Turn LED On", command=self.LED_toggle)
@@ -148,9 +155,23 @@ class ButtonFrame(tk.Frame):
         # button to save the data, this will open a toplevel with the data printed out, and an option to save to file
         tk.Button(self, text="Save Data", command=self.save_data).pack(side="top", pady=BUTTON_PADY)
 
+        # radio buttons to choose what data type to display
+        tk.Label(self, text="Data Display Type:").pack(side="top", pady=BUTTON_PADY)
+        self.display_type = tk.StringVar()
+        self.display_type.set(DisplayTypes.counts.value)
+        self.display_type.trace("w", self.toggle_display_type)
+        tk.Radiobutton(self, text=DisplayTypes.counts.value, variable=self.display_type,
+                       value=DisplayTypes.counts.value).pack(side="top", pady=BUTTON_PADY)
+        tk.Radiobutton(self, text=DisplayTypes.power.value, variable=self.display_type,
+                       value=DisplayTypes.power.value).pack(side="top", pady=BUTTON_PADY)
+        tk.Radiobutton(self, text=DisplayTypes.concentration.value, variable=self.display_type,
+                       value=DisplayTypes.concentration.value).pack(side="top", pady=BUTTON_PADY)
+
         # button to debug the sensor by writing or reading the sensors (virtual) registers
         tk.Button(self, text="Register Check", command=lambda: reg_toplevel.RegDebugger(self.master, settings.device)
                   ).pack(side="top", pady=BUTTON_PADY)
+
+        # tk.Button(self, text="Check USB Data", command=self.read_just_data).pack(side="top", pady=BUTTON_PADY)
 
     def LED_toggle(self):
         """
@@ -177,12 +198,11 @@ class ButtonFrame(tk.Frame):
         """
         # self.settings.reading is traced to device settings method toggle_read
         if self.settings.reading.get():
-            # self.settings.reading.set(False)
-            self.device
+            self.settings.reading.set(False)
 
             self.run_button.config(text="Start Reading")
         else:
-            # self.settings.reading.set(True)
+            self.settings.reading.set(True)
 
             self.run_button.config(text="Stop Reading")
 
@@ -194,7 +214,11 @@ class ButtonFrame(tk.Frame):
         """
         Take a single sensor read
         """
-        self.settings.single_read()
+        print("flash: ", self.use_flash.get())
+        self.settings.single_read(self.use_flash.get())
+
+    def read_just_data(self):
+        self.settings.device.read_data()
 
     def save_data(self):
         """
@@ -202,6 +226,10 @@ class ButtonFrame(tk.Frame):
         """
         logging.debug("save the data: ")
         self.graph.data.save_data()
+
+    def toggle_display_type(self, *args):
+        logging.debug("Changing display type to: {0}".format(self.display_type.get()))
+        self.graph.change_data_units(self.display_type.get())
 
 
 class StatusFrame(tk.Frame):

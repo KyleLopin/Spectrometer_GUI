@@ -93,10 +93,16 @@ class AS7262(BaseSpectrometer):
         # self.usb.usb_write("AS7262|STOP")
         self.reading = False
 
-    def read_once(self):
+    def read_once(self, flash_on=False):
+        logging.debug("read once")
+        if flash_on:
+            self.usb.usb_write("AS7262|READ_SINGLE|FLASH")
+        else:
+            self.usb.usb_write("AS7262|READ_SINGLE|NO_FLASH")
 
-        self.usb.usb_write("AS7262|READ_SINGLE")
+        self.read_data()
 
+    def read_data(self):
         data = self.usb.read_all_data()
         if data:
             self.master.update_graph(data)
