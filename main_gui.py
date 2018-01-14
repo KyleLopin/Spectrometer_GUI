@@ -20,8 +20,8 @@ __author__ = 'Kyle Vitautas Lopin'
 
 class DisplayTypes(Enum):
     counts = "Counts"
-    power = "uW / cm2"
-    concentration = "umol / cm2"
+    power = u'\u03bcW / cm\u00B2'
+    concentration = u"\u03bcmol / cm\u00B2 (\u00D7 10\u207B\u2078)"
 
 
 class SpectrometerGUI(tk.Tk):
