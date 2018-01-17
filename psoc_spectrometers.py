@@ -40,8 +40,8 @@ class BaseSpectrometer(object):
 
 
 class AS7262(BaseSpectrometer):
-    def __init__(self, master: main_gui.SpectrometerGUI):
-        self.master = master
+    def __init__(self, master):
+        self.master = master  # type: main_gui.SpectrometerGUI
         BaseSpectrometer.__init__(self)
 
         self.settings = device_settings.DeviceSettings_AS7262(self)
@@ -50,13 +50,22 @@ class AS7262(BaseSpectrometer):
         self.after_delay = int(max(float(self.settings.integration_time), 200))
         self.currently_running = False
 
+    def initialize_device(self):
+        # initialize all the settings in case the program restarts
+        self.set_gain(0)
+        self.set_integration_time(255)
+        self.set_LED_power(False)
+        self.set_LED_power(0)
+
     def set_gain(self, gain_setting):
         self.usb.usb_write("AS7262|GAIN|{0}".format(gain_setting))
+        self.master.graph.update_data_conversion_factors()
 
     def set_integration_time(self, integration_time_ms):
         integration_cycles = int(integration_time_ms / self.integration_time_per_cycle)
         self.usb.usb_write("AS7622|INTEGRATE_TIME|{0}".format(str(integration_cycles).zfill(3)))
         self.after_delay = int(max(float(self.settings.integration_time), 200))
+        self.master.graph.update_data_conversion_factors()
 
     def set_read_period(self, read_period_ms: float):
         self.usb.usb_write("SET_CONT_READ_PERIOD|{0}".format(str(int(read_period_ms)).zfill(5)))

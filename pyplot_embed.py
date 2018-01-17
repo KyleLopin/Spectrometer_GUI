@@ -2,7 +2,8 @@
 
 """ Embedded matplotlib plot in a tkinter frame """
 
-#standard libraries
+# standard libraries
+import logging
 import tkinter as tk
 
 # installed libraries
@@ -15,16 +16,15 @@ import data_class
 
 __author__ = 'Kyle Vitautas Lopin'
 
-COUNT_SCALE = [0.1, 0.3, 1, 3, 10, 30, 50, 100, 200, 500, 1000, 5000, 10000, 50000, 100000]
+COUNT_SCALE = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 50, 100, 300, 500, 1000, 3000, 5000, 10000, 30000, 50000, 100000]
 WAVELENGTH = [450, 500, 550, 570, 600, 650]
-
 
 
 class SpectroPlotter(tk.Frame):
     def __init__(self, parent, settings, _size=(6, 3)):
         tk.Frame.__init__(self, master=parent)
         self.data = data_class.SpectrometerData(WAVELENGTH, settings)
-        self.scale_index = 5
+        self.scale_index = 7
 
         # routine to make and embed the matplotlib graph
         self.figure_bed = plt.figure(figsize=_size)
@@ -48,19 +48,28 @@ class SpectroPlotter(tk.Frame):
         self.axis.set_ylabel('Counts')
         self.lines = None
 
-    def update_counts_data(self, counts):
-        while max(counts) > COUNT_SCALE[self.scale_index]:
+    def update_data_conversion_factors(self):
+        self.data.calculate_conversion_factors()
+
+    def update_data(self, new_count_data=None):
+        logging.debug("updating data")
+        if new_count_data:
+            self.data.update_data(new_count_data)
+        else:
+            self.data.set_data_type()
+        display_data = self.data.current_data
+
+        while max(display_data) > COUNT_SCALE[self.scale_index]:
             self.scale_index += 1
             self.axis.set_ylim([0, COUNT_SCALE[self.scale_index]])
-        while (self.scale_index >= 1) and (max(counts) < COUNT_SCALE[self.scale_index-1]):
+        while (self.scale_index >= 1) and (max(display_data) < COUNT_SCALE[self.scale_index-1]):
             self.scale_index -= 1
             self.axis.set_ylim([0, COUNT_SCALE[self.scale_index]])
         if self.lines:
-            self.lines.set_ydata(counts)
+            self.lines.set_ydata(display_data)
         else:
-            self.lines, = self.axis.plot(WAVELENGTH, counts)
+            self.lines, = self.axis.plot(WAVELENGTH, display_data)
         self.canvas.draw()
-        self.save_data(counts)
 
     def save_data(self, data):
         self.data.update_data(data)
@@ -69,5 +78,16 @@ class SpectroPlotter(tk.Frame):
         print("check", data_type)
         self.axis.set_ylabel(data_type)
 
-        # update canvas
+        # this is needed in case there is no data that will cause the canvas to be redrawn again
         self.canvas.draw()
+        # self.data.set_data_type()
+
+        # logging.debug("new data: {0}".format(self.data.current_data))
+
+        # if self.data.current_data:
+        #     self.lines.set_ydata(self.data.current_data)
+        #
+        #     # update canvas
+        #     self.canvas.draw()
+        if self.data.current_data:
+            self.update_data()

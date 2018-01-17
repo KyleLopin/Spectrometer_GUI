@@ -21,7 +21,7 @@ __author__ = 'Kyle Vitautas Lopin'
 class DisplayTypes(Enum):
     counts = "Counts"
     power = u'\u03bcW / cm\u00B2'
-    concentration = u"\u03bcmol / cm\u00B2 (\u00D7 10\u207B\u2078)"
+    concentration = u"\u03bcmol / (cm\u00B2 \u00D7 s) (\u00D7 10\u207B\u2078)"
 
 
 class SpectrometerGUI(tk.Tk):
@@ -67,15 +67,16 @@ class SpectrometerGUI(tk.Tk):
         # make the status frame with the connect button and status information
         self.status_frame = StatusFrame(self, self.device)
         self.status_frame.pack(side='top', fill=tk.X)
+        self.device.initialize_device()
 
-    def update_graph(self, counts: tuple):
+    def update_graph(self, data: tuple):
         """
         Allow user to call the master class to update the graph for any widget that does not
         have direct access to the graph
 
-        :param counts:  data to display on y-axis of graph
+        :param data:  data to display on y-axis of graph
         """
-        self.graph.update_counts_data(counts)
+        self.graph.update_data(data)
 
     def device_not_working(self):
         """
@@ -140,6 +141,7 @@ class ButtonFrame(tk.Frame):
 
         # make buttons to control the device
         # button to make a single sensor read
+        self.reading = False
         self.read_button = tk.Button(self, text="Single Read", command=self.read_once)
         self.read_button.pack(side="top", pady=BUTTON_PADY)
 
@@ -157,7 +159,8 @@ class ButtonFrame(tk.Frame):
 
         # radio buttons to choose what data type to display
         tk.Label(self, text="Data Display Type:").pack(side="top", pady=BUTTON_PADY)
-        self.display_type = tk.StringVar()
+        # self.display_type = tk.StringVar()
+        self.display_type = self.settings.measurement_mode_var
         self.display_type.set(DisplayTypes.counts.value)
         self.display_type.trace("w", self.toggle_display_type)
         tk.Radiobutton(self, text=DisplayTypes.counts.value, variable=self.display_type,
@@ -197,14 +200,25 @@ class ButtonFrame(tk.Frame):
         Toggle the device to continuously read
         """
         # self.settings.reading is traced to device settings method toggle_read
-        if self.settings.reading.get():
+        if self.settings.reading.get():  # stop reading
             self.settings.reading.set(False)
+            self.read_button.config(state=tk.ACTIVE)
 
             self.run_button.config(text="Start Reading")
-        else:
+        else:  # start reading
+            # don't let the user do a single read when doing continous reads
+            self.read_button.config(state=tk.DISABLED)
             self.settings.reading.set(True)
 
             self.run_button.config(text="Stop Reading")
+
+    def disable_read_buttons(self):
+        self.run_button.config(state=tk.DISABLED)
+        self.read_button.config(state=tk.DISABLED)
+
+    def enable_read_buttons(self):
+        self.run_button.config(state=tk.ACTIVE)
+        self.read_button.config(state=tk.ACTIVE)
 
     def average_reads(self):
         """ Not implemented yet """
@@ -214,8 +228,10 @@ class ButtonFrame(tk.Frame):
         """
         Take a single sensor read
         """
-        print("flash: ", self.use_flash.get())
+        self.read_button.config(state=tk.DISABLED)
+        logging.debug("read once with flash: {0}".format(self.use_flash.get()))
         self.settings.single_read(self.use_flash.get())
+        self.read_button.config(state=tk.ACTIVE)
 
     def read_just_data(self):
         self.settings.device.read_data()

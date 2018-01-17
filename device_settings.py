@@ -4,6 +4,7 @@ import logging
 import tkinter as tk
 
 # local files
+import data_class
 import psoc_spectrometers
 
 __author__ = 'Kyle Vitautas Lopin'
@@ -69,7 +70,7 @@ class DeviceSettings_AS7262(object):
         self.LED_on = False
         self.ind_power_level = IndPowerSetting.IND_POWER_1_mA
         self.ind_on = False
-        self.read_period = 1000 # milliseconds per read
+        self.read_period = 1000  # milliseconds per read
         self.reading = tk.BooleanVar()
         self.reading.set(False)
         self.reading.trace("w", self.toggle_read)
@@ -133,5 +134,4 @@ class DeviceSettings_AS7262(object):
             self.device.stop_read()
 
     def single_read(self, flash=False):
-        print('read once')
         self.device.read_once(flash)
