@@ -5,6 +5,7 @@
 # standard libraries
 import logging
 import tkinter as tk
+from tkinter import messagebox
 from tkinter import filedialog
 # local files
 import main_gui
@@ -97,6 +98,7 @@ class SpectrometerData(object):
 class SaveTopLevel(tk.Toplevel):
     def __init__(self, wavelength_data: list, light_data: list, data_type: str):
         tk.Toplevel.__init__(self, master=None)
+        self.attributes('-topmost', 'true')
         self.geometry('400x300')
         self.title("Save data")
         self.data_string = tk.StringVar()
@@ -124,14 +126,34 @@ class SaveTopLevel(tk.Toplevel):
 
     def save_data(self):
         logging.debug("saving data")
-        _file = open_file('saveas')  # open the file
+        self.attributes('-topmost', 'false')
+        _file = None
+        try:
+            _file = open_file('saveas')  # open the file
+            logging.debug("saving data: 4; file: {0}".format(_file))
+        except Exception as error:
+            messagebox.showerror(title="Error", message=error)
+        self.attributes('-topmost', 'true')
+
         if _file:
             if self.comment.get(1.0, tk.END):
+                logging.debug("saving data: 5")
                 self.data_string += self.comment.get(1.0, tk.END)
+                logging.debug("saving data: 6; string: {0}".format(self.data_string))
+            try:
 
-            _file.write(self.data_string)
-            _file.close
-        self.destroy()
+                _file.write(self.data_string)
+                logging.debug("saving data: 7")
+                _file.close()
+                self.destroy()
+
+            except Exception as error:
+
+                messagebox.showerror(title="Error", message=error)
+                self.lift()
+
+        else:
+            self.destroy()
 
 
 def open_file(_type):
@@ -145,10 +167,13 @@ def open_file(_type):
     options['defaultextension'] = ".csv"
     # options['filetypes'] = [('All files', '*.*'), ("Comma separate values", "*.csv")]
     options['filetypes'] = [("Comma separate values", "*.csv")]
+    logging.debug("saving data: 1")
     if _type == 'saveas':
         """ Ask the user what name to save the file as """
+        logging.debug("saving data: 2")
         _file = filedialog.asksaveasfile(mode='a', confirmoverwrite=False, **file_opt)
     elif _type == 'open':
         _filename = filedialog.askopenfilename(**file_opt)
         return _filename
+    logging.debug("saving data: 3")
     return _file
