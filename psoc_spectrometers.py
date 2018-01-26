@@ -6,6 +6,7 @@
 import logging
 import queue
 import threading
+import time
 import tkinter as tk
 
 # local files
@@ -137,13 +138,28 @@ class ThreadedDataLoop(threading.Thread):
     def run(self):
         while not self.termination_flag:
             new_data = self.comm_queue.get()
-            print("got data queue: ", new_data)
             self.master.update_graph(new_data)
         logging.debug("Ending threaded data loop")
 
 
 class ConnectionStatusToplevel(tk.Toplevel):
-    def __init__(self, status_str):
+    def __init__(self, master, status_str):
         tk.Toplevel.__init__(self)
-        print("open connection test")
-        tk.Label(self, text=status_str).pack()
+        self.master = master  # type: main_gui.SpectrometerGUI
+        self.status_str = status_str  # type: tk.StringVar
+        self.geometry("300x300")
+        self.attributes('-topmost', True)
+        self.status_label = tk.Label(self, text=status_str.get())
+        self.status_label.pack()
+        tk.Button(self, text="Try to reconnect the device", command=self.reconnect).pack(side='top', pady=10)
+
+    def reconnect(self):
+        self.status_str.set("Reconnecting")
+        reconnected = self.master.reconnect_device()
+
+        if reconnected:
+            self.status_str.set("Spectrometer: {0} connected".format(self.master.device.usb.spectrometer))
+            time.sleep(0.2)
+            self.destroy()
+        else:
+            self.status_str.set("Device not working correctly")

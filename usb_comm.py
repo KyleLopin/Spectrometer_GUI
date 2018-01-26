@@ -97,6 +97,7 @@ class PSoC_USB(object):
             self.usb_device_found = True
             self.found = True
             self.device_type = DeviceTypes.usb
+            logging.info("Device type: {0}".format(self.device_type))
 
         # set the active configuration. the pyUSB module deals with the details
         device.set_configuration()
@@ -158,6 +159,7 @@ class PSoC_USB(object):
                 logging.info("Exception: {0}".format(exception))
 
     def usb_write(self, message, endpoint=OUT_ENDPOINT):
+        logging.debug("writing message: {0} with a device: {1}".format(message, self.device_type))
         if self.device_type == DeviceTypes.usb:
             self.usb_write_usb(message, endpoint=endpoint)
         elif self.device_type == DeviceTypes.serial:
@@ -193,6 +195,9 @@ class PSoC_USB(object):
         except Exception as error:
             logging.error("USB writing error: {0}".format(error))
             self.connected = False
+            self.spectrometer = None
+            self.device_type = None
+            self.found = None
 
     def usb_read_info(self, info_endpoint=None, num_usb_bytes=None):
         if not info_endpoint:
@@ -277,9 +282,6 @@ class PSoC_USB(object):
 
     def start_reading(self):
         pass
-
-
-
 
 
 class ThreadedUSBDataCollector(threading.Thread):

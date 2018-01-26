@@ -100,7 +100,7 @@ class DeviceSettings_AS7262(object):
 
     def gain_var_set(self, *args):
         self.gain = GAIN_SETTING_MAP[self.gain_var.get()].value
-        print("gain =", self.gain)
+        logging.info("gain ={0}".format(self.gain))
         self.device.set_gain(self.gain)
 
     def integration_time_set(self, *args):
@@ -108,9 +108,9 @@ class DeviceSettings_AS7262(object):
         self.device.set_integration_time(self.integration_time)
 
     def LED_power_set(self, *args):
-        print("Got LED power: ", self.LED_power_level_var.get())
+        logging.debug("Got LED power: ".format(self.LED_power_level_var.get()))
         self.LED_power_level = LED_POWER_MAP[self.LED_power_level_var.get()]
-        print("New LED power level: ", self.LED_power_level.value)
+        logging.debug("New LED power level: ".format(self.LED_power_level.value))
         self.device.set_LED_power_level(self.LED_power_level.value)
 
     def toggle_LED(self, turn_LED_on: bool):

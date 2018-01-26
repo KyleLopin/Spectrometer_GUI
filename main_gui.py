@@ -102,6 +102,16 @@ class SpectrometerGUI(tk.Tk):
         """
         self.device.usb.usb_write(message)
 
+    def reconnect_device(self):
+        self.device = psoc_spectrometers.AS7262(self)
+        self.settings = self.device.settings
+        self.buttons_frame.update_settings(self.settings)
+        self.device.initialize_device()
+
+        if self.device.usb.spectrometer:
+            return True
+        return False
+
 
 BUTTON_PADY = 7
 
@@ -180,12 +190,15 @@ class ButtonFrame(tk.Frame):
                        value=DisplayTypes.concentration.value).pack(side="top", pady=BUTTON_PADY)
 
         # button to debug the sensor by writing or reading the sensors (virtual) registers
-        tk.Button(self, text="Register Check", command=lambda: reg_toplevel.RegDebugger(self.master, settings.device)
-                  ).pack(side="top", pady=BUTTON_PADY)
+        # Button(self, text="Register Check", command=lambda: reg_toplevel.RegDebugger(self.master, settings.device)
+        #           ).pack(side="top", pady=BUTTON_PADY)
 
         # tk.Button(self, text="Check USB Data", command=self.read_just_data).pack(side="top", pady=BUTTON_PADY)
 
-        tk.Button(self, text="Check commands", command=self.get_message).pack()
+        # tk.Button(self, text="Check commands", command=self.get_message).pack()
+
+    def update_settings(self, settings):  # hack
+        self.settings = settings
 
     def get_message(self):
         self.device.usb.usb_write("E")
@@ -274,6 +287,7 @@ class StatusFrame(tk.Frame):
         :param device:
         """
         tk.Frame.__init__(self, parent)
+        self.master = parent  # type: SpectrometerGUI
         self.device = device  # type: psoc_spectrometers.AS7262
         self.status_str = tk.StringVar()
         if device.usb.spectrometer:
@@ -290,13 +304,23 @@ class StatusFrame(tk.Frame):
         self.status_label.bind("<Button-1>", self.device_connection_test)
 
     def update_status(self, message):
+        print("updating status string")
+        print(self.device.usb.spectrometer)
         self.status_str.set(message)
         self.status_label = tk.Label(self, textvariable=self.status_str)
+
+        if not self.device.usb.spectrometer:
+            self.status_label.config(bg='red')
+            self.status_label = tk.Label(self, textvariable=self.status_str)
+            psoc_spectrometers.ConnectionStatusToplevel(self.master, self.status_str)
+
+        # self.status_str.set(message)
+        # self.status_label = tk.Label(self, textvariable=self.status_str)
 
     def device_connection_test(self, *args):
         logging.debug("Checking the status of the device")
 
-        psoc_spectrometers.ConnectionStatusToplevel(self.status_str)
+        psoc_spectrometers.ConnectionStatusToplevel(self.master, self.status_str)
 
 
 if __name__ == '__main__':
