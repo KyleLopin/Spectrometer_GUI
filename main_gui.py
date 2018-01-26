@@ -7,6 +7,8 @@ matplotlib graph embedded into a tk.Frame to display the data and usb_comm commu
 # standard libraries
 from enum import Enum
 import logging
+import os
+import sys
 import tkinter as tk
 # installed libraries
 # local files
@@ -16,6 +18,13 @@ import pyplot_embed
 import reg_toplevel
 
 __author__ = 'Kyle Vitautas Lopin'
+
+# if getattr(sys, 'frozen', False):
+#     # we are running in a |PyInstaller| bundle
+#     basedir = sys._MEIPASS
+# else:
+#     # we are running in a normal Python environment
+#     basedir = os.path.dirname(__file__)
 
 
 class DisplayTypes(Enum):
@@ -176,6 +185,12 @@ class ButtonFrame(tk.Frame):
 
         # tk.Button(self, text="Check USB Data", command=self.read_just_data).pack(side="top", pady=BUTTON_PADY)
 
+        tk.Button(self, text="Check commands", command=self.get_message).pack()
+
+    def get_message(self):
+        self.device.usb.usb_write("E")
+        print(self.device.usb.usb_read_data(20))
+
     def LED_toggle(self):
         """
         Toggle the LED of the color sensor that illuminates the sample.
@@ -287,5 +302,5 @@ class StatusFrame(tk.Frame):
 if __name__ == '__main__':
     app = SpectrometerGUI()
     app.title("Spectrograph")
-    app.geometry("900x650")
+    app.geometry("900x750")
     app.mainloop()

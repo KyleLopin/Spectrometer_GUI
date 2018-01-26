@@ -109,17 +109,29 @@ class SaveTopLevel(tk.Toplevel):
 
         text_box = tk.Text(self, width=40, height=8)
         text_box.insert(tk.END, self.data_string)
-        text_box.pack(side='top')
+        text_box.pack(side='top', pady=6)
 
-        tk.Button(self, text="Save Data", command=self.save_data).pack(side='top')
+        tk.Label(self, text="Comments:").pack(side='top', pady=6)
+
+        self.comment = tk.Text(self, width=40, height=3)
+        self.comment.pack(side='top', pady=6)
+
+        button_frame = tk.Frame(self)
+        button_frame.pack(side='top', pady=6)
+        tk.Button(button_frame, text="Save Data", command=self.save_data).pack(side='left', padx=10)
+        tk.Button(button_frame, text="Close", command=self.destroy).pack(side='left', padx=10)
+
 
     def save_data(self):
         logging.debug("saving data")
         _file = open_file('saveas')  # open the file
-        print(_file)
         if _file:
+            if self.comment.get(1.0, tk.END):
+                self.data_string += self.comment.get(1.0, tk.END)
+
             _file.write(self.data_string)
-        _file.close
+            _file.close
+        self.destroy()
 
 
 def open_file(_type):
@@ -131,10 +143,11 @@ def open_file(_type):
     """ Make the options for the save file dialog box for the user """
     file_opt = options = {}
     options['defaultextension'] = ".csv"
-    options['filetypes'] = [('All files', '*.*'), ("Comma separate values", "*.csv")]
+    # options['filetypes'] = [('All files', '*.*'), ("Comma separate values", "*.csv")]
+    options['filetypes'] = [("Comma separate values", "*.csv")]
     if _type == 'saveas':
         """ Ask the user what name to save the file as """
-        _file = filedialog.asksaveasfile(mode='a', **file_opt)
+        _file = filedialog.asksaveasfile(mode='a', confirmoverwrite=False, **file_opt)
     elif _type == 'open':
         _filename = filedialog.askopenfilename(**file_opt)
         return _filename

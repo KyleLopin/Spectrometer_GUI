@@ -12,6 +12,9 @@ import serial
 import struct
 import sys
 import threading
+import time
+
+import time
 # installed libraries
 import usb
 import usb.core
@@ -29,10 +32,11 @@ IN_ENDPOINT = 0x81
 OUT_ENDPOINT = 0x02
 
 # Serial communication settings
-BAUDRATE = 115200
-STOPBITS = 1
-PARITY = serial.PARITY_EVEN
-BYTESIZE = 8
+# BAUDRATE = 115200
+BAUDRATE = 114286
+STOPBITS = serial.STOPBITS_ONE
+PARITY = serial.PARITY_NONE
+BYTESIZE = serial.EIGHTBITS
 
 __author__ = 'Kyle Vitautas Lopin'
 
@@ -57,9 +61,11 @@ class PSoC_USB(object):
         # if the usb was not found
         if not self.usb_device_found:
             logging.info("No USB device find, looking for serial")
-            self.connect_serial()
+            self.device = self.connect_serial()
 
-
+        if not self.device:
+            # no device was found so just return and dont try a connection test
+            return
         self.connection_test()
         # data_processing_function([1])
         # make an extra thread to poll the usb as this thread will hang on the timeouts of the usb
@@ -131,9 +137,20 @@ class PSoC_USB(object):
                 logging.info("writing to port: {0}".format(port.port))
                 device = serial.Serial(port.port, baudrate=BAUDRATE, stopbits=STOPBITS,
                                        parity=PARITY, bytesize=BYTESIZE, timeout=1)
-                # device.write("ID".encode())
-                from_device = device.readline()
+                device.flushInput()
+                device.flushOutput()
+
+
+                device.write(b"ID-")
+                time.sleep(0.5)
+                from_device = device.read_all()
                 logging.info("From the device: {0}".format(from_device))
+                if from_device == PSOC_ID_MESSAGE:
+                    logging.info("Found serial device")
+                    self.found = True
+                    self.device_type = DeviceTypes.serial
+                    self.connected = True
+                    return device
 
             except Exception as exception:
                 # not the correct device
@@ -141,6 +158,28 @@ class PSoC_USB(object):
                 logging.info("Exception: {0}".format(exception))
 
     def usb_write(self, message, endpoint=OUT_ENDPOINT):
+        if self.device_type == DeviceTypes.usb:
+            self.usb_write_usb(message, endpoint=endpoint)
+        elif self.device_type == DeviceTypes.serial:
+            self.usb_write_serial(message)
+
+    def usb_write_serial(self, message):
+        if not self.device:
+            logging.error("No device")
+            return
+        try:
+
+            logging.debug("write to usb/uart: {0}-".format(message))
+            self.device.write("{0}-".format(message).encode('utf-8'))
+            while self.device.out_waiting != 0:
+                print(self.device.out_waiting)
+
+        except Exception as error:
+            logging.error("USB writing error: {0}".format(error))
+            self.connected = False
+
+    def usb_write_usb(self, message, endpoint=OUT_ENDPOINT):
+        time.sleep(0.1)
         if not self.device:
             logging.error("No device")
             return
@@ -161,9 +200,45 @@ class PSoC_USB(object):
         if not num_usb_bytes:
             num_usb_bytes = self.master_device.USB_INFO_BYTE_SIZE
 
-    def usb_read_data(self, num_usb_bytes=USB_DATA_BYTE_SIZE,
+    def usb_read_data(self, num_bytes=USB_DATA_BYTE_SIZE,
                       endpoint=IN_ENDPOINT, encoding=None,
                       timeout=3000):
+        if self.device_type == DeviceTypes.usb:
+            return self.usb_read_data_usb(num_bytes, endpoint=endpoint,
+                                          encoding=encoding, timeout=timeout)
+
+        elif self.device_type == DeviceTypes.serial:
+            return self.usb_read_data_serial()
+
+    def usb_read_data_serial(self, encoding=None, timeout=3000):
+        if not self.connected:
+            logging.info("not working")
+            return None
+        try:
+            # usb_input = self.device.readline(timeout=1.0)  # TODO fix this
+            time.sleep(0.3)
+            usb_input = self.device.read_all()
+            logging.debug(usb_input)
+        except Exception as error:
+            logging.error("Failed data read")
+            return None
+        if encoding == 'uint16':
+            pass
+            # return convert_uint8_uint16(usb_input)
+        elif encoding == "float32":
+            if (len(usb_input) % 4) == 0:
+                # return struct.iter_unpack('f', usb_input)
+                return struct.unpack('>ffffff', usb_input)
+            else:
+                logging.error("Error in reading")
+        elif encoding == 'string':
+            return usb_input.tostring()  # remove the 0x00 end of string
+        else:  # no encoding so just return raw data
+            return usb_input
+
+    def usb_read_data_usb(self, num_bytes=USB_DATA_BYTE_SIZE,
+                          endpoint=IN_ENDPOINT, encoding=None,
+                          timeout=3000):
         """ Read data from the usb and return it, if the read fails, log the miss and return None
         :param num_usb_bytes: number of bytes to read
         :param endpoint: hexidecimal of endpoint to read, has to be formatted as 0x8n where
@@ -176,7 +251,7 @@ class PSoC_USB(object):
             logging.info("not working")
             return None
         try:
-            usb_input = self.device.read(endpoint, num_usb_bytes, timeout)  # TODO fix this
+            usb_input = self.device.read(endpoint, num_bytes, timeout)  # TODO fix this
             logging.debug(usb_input)
         except Exception as error:
             logging.error("Failed data read")
@@ -198,7 +273,7 @@ class PSoC_USB(object):
 
     def read_all_data(self):
         # mock a data read now
-        return self.usb_read_data(num_usb_bytes=24, encoding="float32")
+        return self.usb_read_data(num_bytes=24, encoding="float32")
 
     def start_reading(self):
         pass
@@ -259,7 +334,7 @@ def find_available_ports():
     # taken from http://stackoverflow.com/questions/12090503/listing-available-com-ports-with-python
 
     if sys.platform.startswith('win'):
-        ports = ['COM%s' % (i+1) for i in range(256)]
+        ports = ['COM%s' % (i+1) for i in range(32)]
     elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
         ports = glob.glob('/dev/tty[A-Za-z]*')
     elif sys.platform.startswith('darwin'):
@@ -270,7 +345,9 @@ def find_available_ports():
     available_ports = []
     for port in ports:
         try:
-            device = serial.Serial(port)
+            device = serial.Serial(port=port, write_timeout=0.5,
+                                   inter_byte_timeout=1, baudrate=115200,
+                                   parity=serial.PARITY_EVEN, stopbits=1)
             device.close()
             available_ports.append(device)
         except (OSError, serial.SerialException):

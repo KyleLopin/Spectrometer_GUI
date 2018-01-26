@@ -53,7 +53,7 @@ class AS7262(BaseSpectrometer):
     def initialize_device(self):
         # initialize all the settings in case the program restarts
         self.set_gain(0)
-        self.set_integration_time(255)
+        self.set_integration_time(1428)
         self.set_LED_power(False)
         self.set_LED_power(0)
 
