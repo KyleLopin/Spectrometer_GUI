@@ -190,8 +190,8 @@ class ButtonFrame(tk.Frame):
                        value=DisplayTypes.concentration.value).pack(side="top", pady=BUTTON_PADY)
 
         # button to debug the sensor by writing or reading the sensors (virtual) registers
-        # Button(self, text="Register Check", command=lambda: reg_toplevel.RegDebugger(self.master, settings.device)
-        #           ).pack(side="top", pady=BUTTON_PADY)
+        tk.Button(self, text="Register Check", command=lambda: reg_toplevel.RegDebugger(self.master, settings.device)
+                   ).pack(side="top", pady=BUTTON_PADY)
 
         # tk.Button(self, text="Check USB Data", command=self.read_just_data).pack(side="top", pady=BUTTON_PADY)
 
