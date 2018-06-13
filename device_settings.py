@@ -74,6 +74,7 @@ class DeviceSettings_AS7262(object):
         self.reading = tk.BooleanVar()
         self.reading.set(False)
         self.reading.trace("w", self.toggle_read)
+        self.run_settings = None  # variable to save the run setting to save in the data file
 
         # if the device should continuously read and average the data to show
         self.average_reads = tk.BooleanVar()
@@ -99,7 +100,8 @@ class DeviceSettings_AS7262(object):
         self.read_period_var.trace("w", self.read_period_set)
 
     def gain_var_set(self, *args):
-        self.gain = GAIN_SETTING_MAP[self.gain_var.get()].value
+        # self.gain = GAIN_SETTING_MAP[self.gain_var.get()].value
+        self.gain = GAIN_SETTING_MAP[self.gain_var.get()]
         logging.info("gain ={0}".format(self.gain))
         self.device.set_gain(self.gain)
 
@@ -134,4 +136,8 @@ class DeviceSettings_AS7262(object):
             self.device.stop_read()
 
     def single_read(self, flash=False):
+        # save run settings
+        print('running: ', self.gain)
+        self.run_settings = {'gain': self.gain, 'integration time': self.integration_time, 'flash': flash,
+                             'power': self.LED_power_level, 'LED on': self.LED_on}
         self.device.read_once(flash)

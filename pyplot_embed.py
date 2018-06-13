@@ -76,7 +76,6 @@ class SpectroPlotter(tk.Frame):
         self.data.update_data(data)
 
     def change_data_units(self, data_type):
-        print("check", data_type)
         self.axis.set_ylabel(data_type)
 
         # this is needed in case there is no data that will cause the canvas to be redrawn again

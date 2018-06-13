@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import filedialog
 # local files
+import device_settings
 import main_gui
 
 
@@ -30,7 +31,7 @@ class SpectrometerData(object):
         self.conc_levels = [0] * len(wavelengths)
         self.current_data = None
 
-        self.settings = settings
+        self.settings = settings  # type: device_settings.DeviceSettings_AS7262
         self.gain_var = settings.gain_var  # type: tk.StringVar
         self.integration_time_var = settings.integration_time_var  # type: tk.StringVar
         self.wavelengths = wavelengths
@@ -93,15 +94,21 @@ class SpectrometerData(object):
         if not self.current_data:  # if no data run has been called yet, just pass
             return
         SaveTopLevel(self.wavelengths, self.current_data,
-                     self.settings.measurement_mode_var.get())
+                     self.settings.measurement_mode_var.get(),
+                     self.settings)
 
 
 class SaveTopLevel(tk.Toplevel):
-    def __init__(self, wavelength_data: list, light_data: list, data_type: str):
+    def __init__(self, wavelength_data: list, light_data: list,
+                 data_type: str, settings):
+        print("hello ")
         tk.Toplevel.__init__(self, master=None)
+        # set basic attributes
         self.attributes('-topmost', 'true')
-        self.geometry('450x320')
+        self.geometry('450x380')
         self.title("Save data")
+
+        # strings to display data to user
         self.full_data_string = tk.StringVar()  # string to store wavelength and data
         self.data_string = tk.StringVar()  # string to hold just the data
 
@@ -111,18 +118,52 @@ class SaveTopLevel(tk.Toplevel):
             self.full_data_string += "{0}, {1:4.3f}\n".format(_data, light_data[i])
             self.data_string += "{0:4.3f}\n".format(light_data[i])
 
+        # make the area
         self.text_box = tk.Text(self, width=50, height=8)
         self.text_box.insert(tk.END, self.full_data_string)
         self.text_box.pack(side='top', pady=6)
 
+        # allow user to display just the data not the wavelengths all the time
         self.display_type = tk.IntVar()
         tk.Checkbutton(self, text="Show just data (no wavelengths)", command=self.toggle_data_display,
                        variable=self.display_type).pack(side='top', pady=6)
 
+        # Allow the user to add comments to the data file
         tk.Label(self, text="Comments:").pack(side='top', pady=6)
 
-        self.comment = tk.Text(self, width=50, height=3)
+        # make string prepopulated with settings
+        # this dictionary loops are horrible
+        power = None
+        for value, power_setting in device_settings.LED_POWER_MAP.items():
+            if power_setting == settings.run_settings['power']:
+                power = value
+
+        lighting_str = ""
+        if settings.run_settings['LED on']:
+            lighting_str += "LED on with {0}".format(power)
+        elif settings.run_settings['flash']:
+            lighting_str += "LED flash with {0}".format(power)
+        else:
+            lighting_str += "No lighting"
+        # get gain settings
+        gain = None
+        for value, gain_setting in device_settings.GAIN_SETTING_MAP.items():
+            if gain_setting == settings.run_settings['gain']:
+                gain = value
+
+        self.details_str = "gain: {0}, integration time: {1} ms\n{2}".format(gain,
+                                                                             settings.run_settings['integration time'],
+                                                                             lighting_str)
+
+        self.comment = tk.Text(self, width=50, height=5)
+        self.comment.insert(tk.END, self.details_str)
         self.comment.pack(side='top', pady=6)
+
+        # allow user to remove the details
+        self.add_details = tk.IntVar()
+        tk.Checkbutton(self, text="Add run details", command=self.toggle_details,
+                       variable=self.add_details).pack(side='top', pady=6)
+        self.add_details.set(1)
 
         button_frame = tk.Frame(self)
         button_frame.pack(side='top', pady=6)
@@ -136,6 +177,12 @@ class SaveTopLevel(tk.Toplevel):
         else:
             self.text_box.delete(1.0, tk.END)
             self.text_box.insert(tk.END, self.full_data_string)
+
+    def toggle_details(self):
+        if not self.add_details.get():  # button is checked
+            self.comment.delete(1.0, tk.END)
+        else:
+            self.comment.insert(tk.END, self.details_str)
 
     def save_data(self):
         try:

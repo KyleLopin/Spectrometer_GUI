@@ -268,7 +268,6 @@ class ButtonFrame(tk.Frame):
         """
         Save the set of data that is being displayed
         """
-        logging.debug("save the data: ")
         self.graph.data.save_data()
 
     def toggle_display_type(self, *args):
