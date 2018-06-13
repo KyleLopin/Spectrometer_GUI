@@ -90,7 +90,8 @@ class SpectrometerData(object):
         self.concentration_conversion = mol_conversion
 
     def save_data(self):
-        logging.debug("save data type: {0}".format(self.settings.measurement_mode_var.get()))
+        if not self.current_data:  # if no data run has been called yet, just pass
+            return
         SaveTopLevel(self.wavelengths, self.current_data,
                      self.settings.measurement_mode_var.get())
 
@@ -99,19 +100,24 @@ class SaveTopLevel(tk.Toplevel):
     def __init__(self, wavelength_data: list, light_data: list, data_type: str):
         tk.Toplevel.__init__(self, master=None)
         self.attributes('-topmost', 'true')
-        self.geometry('400x300')
+        self.geometry('450x320')
         self.title("Save data")
-        self.data_string = tk.StringVar()
+        self.full_data_string = tk.StringVar()  # string to store wavelength and data
+        self.data_string = tk.StringVar()  # string to hold just the data
 
-        logging.debug("save data type: {0}".format(data_type))
-
-        self.data_string = "Wavelength (nm), {0}\n".format(data_type)
+        self.full_data_string = "Wavelength (nm), {0}\n".format(data_type)
+        self.data_string = "{0}\n".format(data_type)
         for i, _data in enumerate(wavelength_data):
-            self.data_string += "{0}, {1:4.3f}\n".format(_data, light_data[i])
+            self.full_data_string += "{0}, {1:4.3f}\n".format(_data, light_data[i])
+            self.data_string += "{0:4.3f}\n".format(light_data[i])
 
-        text_box = tk.Text(self, width=50, height=8)
-        text_box.insert(tk.END, self.data_string)
-        text_box.pack(side='top', pady=6)
+        self.text_box = tk.Text(self, width=50, height=8)
+        self.text_box.insert(tk.END, self.full_data_string)
+        self.text_box.pack(side='top', pady=6)
+
+        self.display_type = tk.IntVar()
+        tk.Checkbutton(self, text="Show just data (no wavelengths)", command=self.toggle_data_display,
+                       variable=self.display_type).pack(side='top', pady=6)
 
         tk.Label(self, text="Comments:").pack(side='top', pady=6)
 
@@ -122,6 +128,14 @@ class SaveTopLevel(tk.Toplevel):
         button_frame.pack(side='top', pady=6)
         tk.Button(button_frame, text="Save Data", command=self.save_data).pack(side='left', padx=10)
         tk.Button(button_frame, text="Close", command=self.destroy).pack(side='left', padx=10)
+
+    def toggle_data_display(self):
+        if self.display_type.get():  # button is checked
+            self.text_box.delete(1.0, tk.END)
+            self.text_box.insert(tk.END, self.data_string)
+        else:
+            self.text_box.delete(1.0, tk.END)
+            self.text_box.insert(tk.END, self.full_data_string)
 
     def save_data(self):
         try:
