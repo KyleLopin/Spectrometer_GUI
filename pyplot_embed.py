@@ -17,7 +17,8 @@ import data_class
 __author__ = 'Kyle Vitautas Lopin'
 
 COUNT_SCALE = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 50, 100, 300, 500, 1000, 3000, 5000, 10000, 30000, 50000, 100000]
-WAVELENGTH = [450, 500, 550, 570, 600, 650]
+# WAVELENGTH = [610, 680, 730, 760, 810, 860]
+WAVELENGTH = [610, 680, 730, 760, 810, 860]
 
 
 class SpectroPlotter(tk.Frame):
@@ -40,7 +41,7 @@ class SpectroPlotter(tk.Frame):
         self.canvas._tkcanvas.pack(side='top', fill=tk.BOTH, expand=True)
         self.canvas.draw()
 
-        self.axis.set_xlim([400, 700])
+        self.axis.set_xlim([600, 900])
         self.axis.set_xlabel("wavelength (nm)")
 
         self.axis.set_ylim([0, COUNT_SCALE[self.scale_index]])
