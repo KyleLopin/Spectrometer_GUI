@@ -137,7 +137,6 @@ class DeviceSettings_AS7262(object):
 
     def single_read(self, flash=False):
         # save run settings
-        print('running: ', self.gain)
         self.run_settings = {'gain': self.gain, 'integration time': self.integration_time, 'flash': flash,
                              'power': self.LED_power_level, 'LED on': self.LED_on}
         self.device.read_once(flash)

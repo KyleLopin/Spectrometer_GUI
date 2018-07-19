@@ -25,7 +25,10 @@ import usb.backend
 import psoc_spectrometers
 
 PSOC_ID_MESSAGE = b"PSoC-Spectrometer"
+NO_SENSOR_ID_MESSAGE = b"No Sensor"
 AS7262_ID_MESSAGE = b"AS7262"
+AS7263_ID_MESSAGE = b"AS7263"
+BOTH__ID_MESSAGE = b"Both AS726X"
 
 USB_DATA_BYTE_SIZE = 40
 IN_ENDPOINT = 0x81
@@ -88,6 +91,9 @@ class PSoC_USB(object):
         :param product_id: the USB product id
         :return: USB device that can use the pyUSB API if found, else returns None if not found
         """
+        dev = usb.core.find(find_all=True)
+        for cfg in dev:
+            print(cfg)
         device = usb.core.find(idVendor=vendor_id, idProduct=product_id)
         if device is None:
             logging.info("Device not found")
@@ -126,9 +132,8 @@ class PSoC_USB(object):
         self.usb_write('ID-Spectrometer')  # device will return string of the spectrometer it is connected to
         received_message = self.usb_read_data(encoding='string')
         logging.debug('Received identifying message: {0}'.format(received_message))
-        if received_message == AS7262_ID_MESSAGE:
-            self.spectrometer = "AS7262"
-            logging.info("AS7262 attached")
+        self.spectrometer = received_message
+        logging.info("sensors attached: {0}".format(received_message))
 
     def connect_serial(self):
         available_ports = find_available_ports()
@@ -140,7 +145,6 @@ class PSoC_USB(object):
                                        parity=PARITY, bytesize=BYTESIZE, timeout=1)
                 device.flushInput()
                 device.flushOutput()
-
 
                 device.write(b"ID-")
                 time.sleep(0.5)
@@ -159,7 +163,7 @@ class PSoC_USB(object):
                 logging.info("Exception: {0}".format(exception))
 
     def usb_write(self, message, endpoint=OUT_ENDPOINT):
-        logging.debug("writing message: {0} with a device: {1}".format(message, self.device_type))
+        # logging.debug("writing message: {0} with a device: {1}".format(message, self.device_type))
         if self.device_type == DeviceTypes.usb:
             self.usb_write_usb(message, endpoint=endpoint)
         elif self.device_type == DeviceTypes.serial:
@@ -194,6 +198,7 @@ class PSoC_USB(object):
 
         except Exception as error:
             logging.error("USB writing error: {0}".format(error))
+            # self.master_device.update_status("Device not connected")
             self.connected = False
             self.spectrometer = None
             self.device_type = None

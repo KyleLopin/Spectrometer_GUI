@@ -290,7 +290,7 @@ class StatusFrame(tk.Frame):
         self.device = device  # type: psoc_spectrometers.AS7262
         self.status_str = tk.StringVar()
         if device.usb.spectrometer:
-            self.status_str.set("Spectrometer: {0} connected".format(device.usb.spectrometer))
+            self.status_str.set("Spectrometer: {0} connected".format(device.usb.spectrometer.decode('utf-8')))
         elif device.usb.connected:
             self.status_str.set("Sensor not found on PSoC")
         elif device.usb.found:

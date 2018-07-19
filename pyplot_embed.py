@@ -9,7 +9,7 @@ import tkinter as tk
 # installed libraries
 import matplotlib
 matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib import pyplot as plt
 # local files
 import data_class
@@ -17,14 +17,14 @@ import data_class
 __author__ = 'Kyle Vitautas Lopin'
 
 COUNT_SCALE = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 50, 100, 300, 500, 1000, 3000, 5000, 10000, 30000, 50000, 100000]
-# WAVELENGTH = [610, 680, 730, 760, 810, 860]
-WAVELENGTH = [610, 680, 730, 760, 810, 860]
+WAVELENGTH_AS7262 = [610, 680, 730, 760, 810, 860]
+WAVELENGTH_AS7263 = [610, 680, 730, 760, 810, 860]
 
 
 class SpectroPlotter(tk.Frame):
     def __init__(self, parent, settings, _size=(6, 3)):
         tk.Frame.__init__(self, master=parent)
-        self.data = data_class.SpectrometerData(WAVELENGTH, settings)
+        self.data = data_class.SpectrometerData(WAVELENGTH_AS7262, settings)
         self.scale_index = 7
 
         # routine to make and embed the matplotlib graph
@@ -35,7 +35,7 @@ class SpectroPlotter(tk.Frame):
         self.canvas = FigureCanvasTkAgg(self.figure_bed, self)
         self.canvas._tkcanvas.config(highlightthickness=0)
 
-        toolbar = NavigationToolbar2TkAgg(self.canvas, self)
+        toolbar = NavigationToolbar2Tk(self.canvas, self)
         toolbar.update()
 
         self.canvas._tkcanvas.pack(side='top', fill=tk.BOTH, expand=True)
