@@ -24,11 +24,11 @@ import usb.backend
 # local files
 import psoc_spectrometers
 
-PSOC_ID_MESSAGE = b"PSoC-Spectrometer"
-NO_SENSOR_ID_MESSAGE = b"No Sensor"
-AS7262_ID_MESSAGE = b"AS7262"
-AS7263_ID_MESSAGE = b"AS7263"
-BOTH__ID_MESSAGE = b"Both AS726X"
+PSOC_ID_MESSAGE = "PSoC-Spectrometer"
+NO_SENSOR_ID_MESSAGE = "No Sensor"
+AS7262_ID_MESSAGE = "AS7262"
+AS7263_ID_MESSAGE = "AS7263"
+BOTH__ID_MESSAGE = "Both AS726X"
 
 USB_DATA_BYTE_SIZE = 40
 IN_ENDPOINT = 0x81
@@ -92,8 +92,8 @@ class PSoC_USB(object):
         :return: USB device that can use the pyUSB API if found, else returns None if not found
         """
         dev = usb.core.find(find_all=True)
-        for cfg in dev:
-            print(cfg)
+        # for cfg in dev:
+        #     print(cfg)
         device = usb.core.find(idVendor=vendor_id, idProduct=product_id)
         if device is None:
             logging.info("Device not found")
@@ -132,7 +132,14 @@ class PSoC_USB(object):
         self.usb_write('ID-Spectrometer')  # device will return string of the spectrometer it is connected to
         received_message = self.usb_read_data(encoding='string')
         logging.debug('Received identifying message: {0}'.format(received_message))
-        self.spectrometer = received_message
+
+        if received_message == "Both AS726X":
+            self.spectrometer = ["AS7262", "AS7263"]
+        elif received_message == "No Sensor":
+            self.spectrometer = []
+        else:
+            self.spectrometer = received_message
+
         logging.info("sensors attached: {0}".format(received_message))
 
     def connect_serial(self):
@@ -242,7 +249,8 @@ class PSoC_USB(object):
             else:
                 logging.error("Error in reading")
         elif encoding == 'string':
-            return usb_input.tostring()  # remove the 0x00 end of string
+            # change bytes to string and change to regular string not byte string
+            return usb_input.tostring().decode("utf-8")
         else:  # no encoding so just return raw data
             return usb_input
 
@@ -277,7 +285,8 @@ class PSoC_USB(object):
             else:
                 logging.error("Error in reading")
         elif encoding == 'string':
-            return usb_input.tostring()  # remove the 0x00 end of string
+            # change bytes to string and change to regular string not byte string
+            return usb_input.tostring().decode("utf-8")
         else:  # no encoding so just return raw data
             return usb_input
 
@@ -325,7 +334,7 @@ class ThreadedUSBDataCollector(threading.Thread):
             else:  # the main program wants to stop the program
                 self.termination_flag = True
         logging.debug("exiting data thread call: {0}".format(self.termination_flag, hex(id(self.termination_flag))))
-        print(hex(id(self.termination_flag)))
+        # print(hex(id(self.termination_flag)))
         self.data_event.set()  # let the main program exit the data_read wait loop
 
     def stop_running(self):

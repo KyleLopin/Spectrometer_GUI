@@ -40,12 +40,13 @@ class BaseSpectrometer(object):
         pass
 
 
-class AS7262(BaseSpectrometer):
+class AS726X(BaseSpectrometer):
     def __init__(self, master):
         self.master = master  # type: main_gui.SpectrometerGUI
         BaseSpectrometer.__init__(self)
+        self.sensors = self.usb.spectrometer
 
-        self.settings = device_settings.DeviceSettings_AS7262(self)
+        self.settings = device_settings.DeviceSettings_AS726X(self)
         self.integration_time_per_cycle = 5.6  # ms
         self.reading = None
         self.after_delay = int(max(float(self.settings.integration_time), 200))

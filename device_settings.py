@@ -60,8 +60,8 @@ READ_RATE_MAP = {"200 ms": 0.2, "500 ms": 0.5, "1 sec": 1, "5 sec": 5,
 # TODO: set the __set__ method to keep numbers in range
 
 
-class DeviceSettings_AS7262(object):
-    def __init__(self, device: psoc_spectrometers.AS7262):
+class DeviceSettings_AS726X(object):
+    def __init__(self, device: psoc_spectrometers.AS726X):
         self.device = device
         self.gain = GainSetting.GAIN_SETTING_1X
         self.measurement_mode = BankMode.BANK_MODE_3.value

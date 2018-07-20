@@ -4,12 +4,11 @@
 to a PSoC controller.  The data is saved in the data_class file, pyplot_embed has a
 matplotlib graph embedded into a tk.Frame to display the data and usb_comm communicates with the device. """
 
+import logging
+import tkinter as tk
 # standard libraries
 from enum import Enum
-import logging
-import os
-import sys
-import tkinter as tk
+
 # installed libraries
 # local files
 import device_settings
@@ -62,7 +61,14 @@ class SpectrometerGUI(tk.Tk):
         main_frame.pack(side='top', fill=tk.BOTH, expand=True)
 
         # attach the actual device and make an easier to use alias for the
-        self.device = psoc_spectrometers.AS7262(self)
+        self.device = psoc_spectrometers.AS726X(self)
+
+        # check what devices are attached
+        print(self.device)
+        print(self.device.usb)
+        print(self.device.usb.spectrometer)
+        print(self.device.sensors)
+
         self.settings = self.device.settings
 
         # make the graph frame, the parent class is a tk.Frame
@@ -70,7 +76,7 @@ class SpectrometerGUI(tk.Tk):
         self.graph.pack(side='left', fill=tk.BOTH, expand=True)
 
         # make command buttons
-        self.buttons_frame = ButtonFrame(main_frame, self.settings, self.graph, self.device)
+        self.buttons_frame = ButtonFrame(main_frame, self.settings, self.graph, self.device, self.device.sensors)
         self.buttons_frame.pack(side='left', padx=10)
 
         # make the status frame with the connect button and status information
@@ -117,6 +123,25 @@ BUTTON_PADY = 7
 
 
 class ButtonFrame(tk.Frame):
+
+    def __init__(self, parent: tk.Frame, settings,  # device_settings.DeviceSettings_AS7262): type hinting issue
+                 graph: pyplot_embed.SpectroPlotter, device, sensors):
+        """
+
+        :param parent:
+        :param settings:
+        :param graph:
+        :param device:
+        """
+        tk.Frame.__init__(self, parent)
+        if sensors:  # make sure a sensor is attached to make its variable options
+            for sensor in sensors:
+                print(sensor)
+
+
+
+
+class AS726X_ButtonFrame(tk.Frame):
     """ Frame to contain all the buttons the user can use to control the settings and use of the device """
 
     def __init__(self, parent: tk.Frame, settings,  # device_settings.DeviceSettings_AS7262): type hinting issue
@@ -175,27 +200,6 @@ class ButtonFrame(tk.Frame):
 
         # button to save the data, this will open a toplevel with the data printed out, and an option to save to file
         tk.Button(self, text="Save Data", command=self.save_data).pack(side="top", pady=BUTTON_PADY)
-
-        # radio buttons to choose what data type to display
-        tk.Label(self, text="Data Display Type:").pack(side="top", pady=BUTTON_PADY)
-        # self.display_type = tk.StringVar()
-        self.display_type = self.settings.measurement_mode_var
-        self.display_type.set(DisplayTypes.counts.value)
-        self.display_type.trace("w", self.toggle_display_type)
-        tk.Radiobutton(self, text=DisplayTypes.counts.value, variable=self.display_type,
-                       value=DisplayTypes.counts.value).pack(side="top", pady=BUTTON_PADY)
-        tk.Radiobutton(self, text=DisplayTypes.power.value, variable=self.display_type,
-                       value=DisplayTypes.power.value).pack(side="top", pady=BUTTON_PADY)
-        tk.Radiobutton(self, text=DisplayTypes.concentration.value, variable=self.display_type,
-                       value=DisplayTypes.concentration.value).pack(side="top", pady=BUTTON_PADY)
-
-        # button to debug the sensor by writing or reading the sensors (virtual) registers
-        tk.Button(self, text="Register Check", command=lambda: reg_toplevel.RegDebugger(self.master, settings.device)
-                   ).pack(side="top", pady=BUTTON_PADY)
-
-        # tk.Button(self, text="Check USB Data", command=self.read_just_data).pack(side="top", pady=BUTTON_PADY)
-
-        # tk.Button(self, text="Check commands", command=self.get_message).pack()
 
     def update_settings(self, settings):  # hack
         self.settings = settings
@@ -275,6 +279,32 @@ class ButtonFrame(tk.Frame):
         self.graph.change_data_units(self.display_type.get())
 
 
+class UniversalButtonsAS726X(tk.Frame):
+    def __init__(self, parent: tk.Frame):
+        tk.Frame.__init__(self, parent)
+
+        # radio buttons to choose what data type to display
+        tk.Label(self, text="Data Display Type:").pack(side="top", pady=BUTTON_PADY)
+        # self.display_type = tk.StringVar()
+        self.display_type = self.settings.measurement_mode_var
+        self.display_type.set(DisplayTypes.counts.value)
+        self.display_type.trace("w", self.toggle_display_type)
+        tk.Radiobutton(self, text=DisplayTypes.counts.value, variable=self.display_type,
+                       value=DisplayTypes.counts.value).pack(side="top", pady=BUTTON_PADY)
+        tk.Radiobutton(self, text=DisplayTypes.power.value, variable=self.display_type,
+                       value=DisplayTypes.power.value).pack(side="top", pady=BUTTON_PADY)
+        tk.Radiobutton(self, text=DisplayTypes.concentration.value, variable=self.display_type,
+                       value=DisplayTypes.concentration.value).pack(side="top", pady=BUTTON_PADY)
+
+        # button to debug the sensor by writing or reading the sensors (virtual) registers
+        tk.Button(self, text="Register Check", command=lambda: reg_toplevel.RegDebugger(self.master, settings.device)
+                  ).pack(side="top", pady=BUTTON_PADY)
+
+        # tk.Button(self, text="Check USB Data", command=self.read_just_data).pack(side="top", pady=BUTTON_PADY)
+
+        # tk.Button(self, text="Check commands", command=self.get_message).pack()
+
+
 class StatusFrame(tk.Frame):
     """ Frame to display information about the sensors and device attached """
 
@@ -287,10 +317,11 @@ class StatusFrame(tk.Frame):
         """
         tk.Frame.__init__(self, parent)
         self.master = parent  # type: SpectrometerGUI
-        self.device = device  # type: psoc_spectrometers.AS7262
+        self.device = device  # type: psoc_spectrometers.AS726X
         self.status_str = tk.StringVar()
         if device.usb.spectrometer:
-            self.status_str.set("Spectrometer: {0} connected".format(device.usb.spectrometer.decode('utf-8')))
+            # self.status_str.set("Spectrometer: {0} connected".format(device.usb.spectrometer.decode('utf-8')))
+            self.status_str.set("Spectrometer: {0} connected".format(device.sensors))
         elif device.usb.connected:
             self.status_str.set("Sensor not found on PSoC")
         elif device.usb.found:
