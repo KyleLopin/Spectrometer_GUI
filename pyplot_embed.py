@@ -17,14 +17,13 @@ import data_class
 __author__ = 'Kyle Vitautas Lopin'
 
 COUNT_SCALE = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 50, 100, 300, 500, 1000, 3000, 5000, 10000, 30000, 50000, 100000]
-WAVELENGTH_AS7262 = [610, 680, 730, 760, 810, 860]
-WAVELENGTH_AS7263 = [610, 680, 730, 760, 810, 860]
-
 
 class SpectroPlotter(tk.Frame):
-    def __init__(self, parent, settings, _size=(6, 3)):
+    def __init__(self, parent, sensors, _size=(6, 3)):
         tk.Frame.__init__(self, master=parent)
-        self.data = data_class.SpectrometerData(WAVELENGTH_AS7262, settings)
+        print(sensors)
+        print(dir(sensors))
+        self.data = data_class.Data(sensors)
         self.scale_index = 7
 
         # routine to make and embed the matplotlib graph
@@ -89,5 +88,6 @@ class SpectroPlotter(tk.Frame):
         #
         #     # update canvas
         #     self.canvas.draw()
+        print('data: ', self.data)
         if self.data.current_data:
             self.update_data()

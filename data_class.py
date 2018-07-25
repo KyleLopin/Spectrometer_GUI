@@ -10,6 +10,7 @@ from tkinter import filedialog
 # local files
 import device_settings
 import main_gui
+import psoc_spectrometers
 
 
 __author__ = 'Kyle V. Lopin'
@@ -24,17 +25,47 @@ CONVERT_COUNT_TO_uMOLE = 1.0 / (6.022 * (10**17))
 CONCENTRATION_SCALE_FACTOR = 10**8
 
 
+class Data(object):
+    def __init__(self, sensors: list):
+        print('if: ', sensors)
+        self.data = []
+        if sensors:
+            for sensor in sensors:  # type: psoc_spectrometers.AS726X
+                self.data.append(SpectrometerData(sensor.settings))
+
+        # figure out how to deal with current_data here
+        self.current_data = None
+
+    def update_data(self, data_counts):
+        pass
+
+    def set_data_type(self):
+        if not self.data:
+            return
+        for data in self.data:
+            data.set_data_type()
+
+    def calculate_conversion_factors(self):
+        if not self.data:
+            return
+        for data in self.data:
+            data.calculate_conversion_factors()
+
+
 class SpectrometerData(object):
-    def __init__(self, wavelengths, settings):
+    def __init__(self, settings):
+        print('c1: ', settings)
         self.counts = None
         self.power_levels = None
-        self.conc_levels = [0] * len(wavelengths)
+        print(settings)
+        print(dir(settings))
+        self.conc_levels = [0] * len(settings.wavelengths)
         self.current_data = None
 
         self.settings = settings  # type: device_settings.DeviceSettings_AS7262
         self.gain_var = settings.gain_var  # type: tk.StringVar
         self.integration_time_var = settings.integration_time_var  # type: tk.StringVar
-        self.wavelengths = wavelengths
+        self.wavelengths = settings.wavelengths
 
         self.power_conversion = None
         self.concentration_conversion = None

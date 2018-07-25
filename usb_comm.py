@@ -60,6 +60,7 @@ class PSoC_USB(object):
         self.device_type = None  # variable to display if a serial or usb protocol is to be used
         self.connected = False
         self.spectrometer = None
+        self.received_message = "No device"
         self.device = self.connect_usb(vendor_id, product_id)
         # if the usb was not found
         if not self.usb_device_found:
@@ -132,13 +133,13 @@ class PSoC_USB(object):
         self.usb_write('ID-Spectrometer')  # device will return string of the spectrometer it is connected to
         received_message = self.usb_read_data(encoding='string')
         logging.debug('Received identifying message: {0}'.format(received_message))
-
+        self.sensor_message = received_message
         if received_message == "Both AS726X":
             self.spectrometer = ["AS7262", "AS7263"]
         elif received_message == "No Sensor":
             self.spectrometer = []
         else:
-            self.spectrometer = received_message
+            self.spectrometer = [received_message]
 
         logging.info("sensors attached: {0}".format(received_message))
 

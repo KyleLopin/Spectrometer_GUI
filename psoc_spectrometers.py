@@ -17,9 +17,29 @@ import usb_comm
 __author__ = 'Kyle Vitautas Lopin'
 
 
-class BaseSpectrometer(object):
-    """ But the basic info all the Base PSoC Base color sensors / spectrometers should use """
+class PSoC(object):
+    def __init__(self, master_app: tk.Tk):
+        self.master_app = master_app
+        usb_device = USB()
+        self.usb = usb_device.usb  # alias to easier attribute
+        self.sensors_list = self.usb.spectrometer
+        self.sensors = []
+        if self.sensors_list:
+            for sensor in self.sensors_list:
+                print('adding sensor: ', sensor)
+                self.sensors.append(AS726X(self.usb, sensor, master_app))
 
+    def initialize_device(self):
+        if self.sensors:
+            for sensor in self.sensors:
+                sensor.set_gain(0)
+                sensor.set_integration_time(1428)
+                sensor.set_LED_power(False)
+                sensor.set_LED_power(0)
+
+
+class USB(object):
+    """ USB communication port to communicate with a microcontroller / PSoC with """
     def __init__(self):
         self.INFO_IN_ENDPOINT = 1
         self.OUT_ENDPOINT = 2
@@ -40,13 +60,13 @@ class BaseSpectrometer(object):
         pass
 
 
-class AS726X(BaseSpectrometer):
-    def __init__(self, master):
-        self.master = master  # type: main_gui.SpectrometerGUI
-        BaseSpectrometer.__init__(self)
-        self.sensors = self.usb.spectrometer
+class AS726X(object):
+    def __init__(self, usb_communication: USB, sensor_type, master_app):
+        self.master = master_app  # type: main_gui.SpectrometerGUI
+        self.usb = usb_communication
+        self.sensor_type = sensor_type
+        self.settings = device_settings.AS726X_Settings(self, sensor_type)
 
-        self.settings = device_settings.DeviceSettings_AS726X(self)
         self.integration_time_per_cycle = 5.6  # ms
         self.reading = None
         self.after_delay = int(max(float(self.settings.integration_time), 200))
@@ -60,12 +80,12 @@ class AS726X(BaseSpectrometer):
         self.set_LED_power(0)
 
     def set_gain(self, gain_setting):
-        self.usb.usb_write("AS7262|GAIN|{0}".format(gain_setting))
+        self.usb.usb_write("{0}|GAIN|{1}".format(self.sensor_type, gain_setting))
         self.master.graph.update_data_conversion_factors()
 
     def set_integration_time(self, integration_time_ms):
         integration_cycles = int(integration_time_ms / self.integration_time_per_cycle)
-        self.usb.usb_write("AS7622|INTEGRATE_TIME|{0}".format(str(integration_cycles).zfill(3)))
+        self.usb.usb_write("{0}|INTEGRATE_TIME|{1}".format(self.sensor_type, str(integration_cycles).zfill(3)))
         self.after_delay = int(max(float(self.settings.integration_time), 200))
         self.master.graph.update_data_conversion_factors()
 
@@ -107,9 +127,9 @@ class AS726X(BaseSpectrometer):
     def read_once(self, flash_on=False):
         logging.debug("read once")
         if flash_on:
-            self.usb.usb_write("AS7262|READ_SINGLE|FLASH")
+            self.usb.usb_write("{0}|READ_SINGLE|FLASH".format(self.sensor_type))
         else:
-            self.usb.usb_write("AS7262|READ_SINGLE|NO_FLASH")
+            self.usb.usb_write("{0}|READ_SINGLE|NO_FLASH".format(self.sensor_type))
 
         self.read_data()
 
@@ -124,10 +144,10 @@ class AS726X(BaseSpectrometer):
         var_str = "OFF"
         if LED_on:
             var_str = "ON"
-        self.usb.usb_write("AS7262|LED_CTRL|{0}".format(var_str))
+        self.usb.usb_write("{0}|LED_CTRL|{1}".format(self.sensor_type, var_str))
 
     def set_LED_power_level(self, power_level):
-        self.usb.usb_write("AS7262|POWER_LEVEL|{0}".format(power_level))
+        self.usb.usb_write("{0}|POWER_LEVEL|{1}".format(self.sensor_type, power_level))
 
 
 class ThreadedDataLoop(threading.Thread):

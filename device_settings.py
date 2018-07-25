@@ -9,6 +9,9 @@ import psoc_spectrometers
 
 __author__ = 'Kyle Vitautas Lopin'
 
+WAVELENGTH_AS7262 = [450, 500, 550, 570, 600, 650]
+WAVELENGTH_AS7263 = [610, 680, 730, 760, 810, 860]
+
 
 class BankMode(Enum):
     BANK_MODE_0 = 0
@@ -60,9 +63,11 @@ READ_RATE_MAP = {"200 ms": 0.2, "500 ms": 0.5, "1 sec": 1, "5 sec": 5,
 # TODO: set the __set__ method to keep numbers in range
 
 
-class DeviceSettings_AS726X(object):
-    def __init__(self, device: psoc_spectrometers.AS726X):
+class AS726X_Settings(object):
+    def __init__(self, device: psoc_spectrometers.AS726X, type):
         self.device = device
+        self.type = type
+        logging.debug('type: {0}'.format(type))
         self.gain = GainSetting.GAIN_SETTING_1X
         self.measurement_mode = BankMode.BANK_MODE_3.value
         self.integration_time = 5.6 * 255
@@ -99,9 +104,15 @@ class DeviceSettings_AS726X(object):
         self.read_period_var.set("1 sec")
         self.read_period_var.trace("w", self.read_period_set)
 
+        if type == "AS7262":
+            self.wavelengths = WAVELENGTH_AS7262
+        elif type == "AS7263":
+            self.wavelengths = WAVELENGTH_AS7263
+        logging.debug('type: {0}; wavelengthss: {1}'.format(type, self.wavelengths))
+
     def gain_var_set(self, *args):
         # self.gain = GAIN_SETTING_MAP[self.gain_var.get()].value
-        self.gain = GAIN_SETTING_MAP[self.gain_var.get()]
+        self.gain = GAIN_SETTING_MAP[self.gain_var.get()].value
         logging.info("gain ={0}".format(self.gain))
         self.device.set_gain(self.gain)
 
