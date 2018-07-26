@@ -85,14 +85,15 @@ class SpectrometerGUI(tk.Tk):
         self.status_frame.pack(side='top', fill=tk.X)
         self.device.initialize_device()
 
-    def update_graph(self, data: tuple):
+    def update_graph(self, data: tuple, sensor_type: str):
         """
         Allow user to call the master class to update the graph for any widget that does not
         have direct access to the graph
 
         :param data:  data to display on y-axis of graph
+        :param sensor_type: string of the type of sensor, "AS7262" or "AS7263"
         """
-        self.graph.update_data(data)
+        self.graph.update_data(sensor_type, data)
 
     def device_not_working(self):
         """

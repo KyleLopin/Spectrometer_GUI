@@ -13,6 +13,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib import pyplot as plt
 # local files
 import data_class
+import device_settings
 
 __author__ = 'Kyle Vitautas Lopin'
 
@@ -23,6 +24,7 @@ class SpectroPlotter(tk.Frame):
         tk.Frame.__init__(self, master=parent)
         print(sensors)
         print(dir(sensors))
+        self.sensors = sensors  # type: device_settings.AS726X_Settings
         self.data = data_class.Data(sensors)
         self.scale_index = 7
 
@@ -51,13 +53,15 @@ class SpectroPlotter(tk.Frame):
     def update_data_conversion_factors(self):
         self.data.calculate_conversion_factors()
 
-    def update_data(self, new_count_data=None):
+    def update_data(self, sensor_type: str, new_count_data=None):
         logging.debug("updating data")
+        print(new_count_data)
         if new_count_data:
-            self.data.update_data(new_count_data)
+            self.data.update_data(new_count_data, sensor_type)
         else:
             self.data.set_data_type()
         display_data = self.data.current_data
+        print(display_data)
 
         while max(display_data) > COUNT_SCALE[self.scale_index]:
             self.scale_index += 1
@@ -68,7 +72,7 @@ class SpectroPlotter(tk.Frame):
         if self.lines:
             self.lines.set_ydata(display_data)
         else:
-            self.lines, = self.axis.plot(WAVELENGTH, display_data)
+            self.lines, = self.axis.plot(self.data.wavelengths, display_data)
         self.canvas.draw()
 
     def save_data(self, data):
@@ -90,4 +94,4 @@ class SpectroPlotter(tk.Frame):
         #     self.canvas.draw()
         print('data: ', self.data)
         if self.data.current_data:
-            self.update_data()
+            self.update_data(self.sensors.type)

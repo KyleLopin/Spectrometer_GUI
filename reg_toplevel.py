@@ -39,6 +39,12 @@ class RegDebugger(tk.Toplevel):
         self.device = device.usb
         self.geometry('400x300')
         self.title("Register Debug")
+
+        self.sensor_type = tk.StringVar()
+        type_frame = tk.Frame(self).pack(side=tk.TOP)
+        tk.Radiobutton(type_frame, text="AS7262", variable=self.sensor_type, value="AS7262").pack(side=tk.LEFT)
+        tk.Radiobutton(type_frame, text="AS7263", variable=self.sensor_type, value="AS7263").pack(side=tk.LEFT)
+
         tk.Label(self, text="Write register:").pack(side='top')
         self.reg_number = tk.StringVar()
         tk.OptionMenu(self, self.reg_number, *REGISTERS.keys()).pack(side='top')
@@ -69,12 +75,14 @@ class RegDebugger(tk.Toplevel):
             print("No register selected")
             return
         print(self.reg_number.get(),  self.reg_value.get())
-        self.device.usb_write("AS7262|REG_WRITE|{0}|0x{1}".format(REGISTERS[self.reg_number.get()],
+        self.device.usb_write("{0}|REG_WRITE|{1}|0x{2}".format(self.sensor_type.get(),
+                                                                  REGISTERS[self.reg_number.get()],
                                                                   self.reg_value.get()))
 
     def read_reg_call(self):
         print('reading reg: ', self.read_reg.get())
-        self.device.usb_write("AS7262|REG_READ|{0}".format(REGISTERS[self.read_reg.get()]))
+        self.device.usb_write("{0}|REG_READ|{1}".format(self.sensor_type.get(),
+                                                           REGISTERS[self.read_reg.get()]))
         return_str = self.device.usb_read_data(encoding="string")
         print(return_str)
         # print("Got back reg value: {:02X}".format(reg_value))

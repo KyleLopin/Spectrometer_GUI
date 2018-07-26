@@ -15,6 +15,9 @@ import psoc_spectrometers
 
 __author__ = 'Kyle V. Lopin'
 
+WAVELENGTH_AS7262 = [450, 500, 550, 570, 600, 650]
+WAVELENGTH_AS7263 = [610, 680, 730, 760, 810, 860]
+
 UW_PER_COUNT = 1 / 45.0  # AS7262 datasheet
 CALIBRATION_INTEGRATION_SETTING = 166.0  # AS7262 datasheet
 CALIBRATION_GAIN_SETTING = 16.0  # AS7262 datasheet
@@ -29,6 +32,7 @@ class Data(object):
     def __init__(self, sensors: list):
         print('if: ', sensors)
         self.data = []
+        self.wavelengths = None
         if sensors:
             for sensor in sensors:  # type: psoc_spectrometers.AS726X
                 self.data.append(SpectrometerData(sensor.settings))
@@ -36,8 +40,13 @@ class Data(object):
         # figure out how to deal with current_data here
         self.current_data = None
 
-    def update_data(self, data_counts):
-        pass
+    def update_data(self, data_counts, sensor_type):
+        if sensor_type == "AS7262":
+            self.current_data = data_counts
+            self.wavelengths = WAVELENGTH_AS7262
+        elif sensor_type == "AS7263":
+            self.current_data = data_counts
+            self.wavelengths = WAVELENGTH_AS7263
 
     def set_data_type(self):
         if not self.data:

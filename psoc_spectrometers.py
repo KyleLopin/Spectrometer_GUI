@@ -136,7 +136,7 @@ class AS726X(object):
     def read_data(self):
         data = self.usb.read_all_data()
         if data:
-            self.master.update_graph(data)
+            self.master.update_graph(data, self.sensor_type)
         else:
             self.master.device_not_working()
 

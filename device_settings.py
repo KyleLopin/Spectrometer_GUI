@@ -9,6 +9,7 @@ import psoc_spectrometers
 
 __author__ = 'Kyle Vitautas Lopin'
 
+# this might not be needed
 WAVELENGTH_AS7262 = [450, 500, 550, 570, 600, 650]
 WAVELENGTH_AS7263 = [610, 680, 730, 760, 810, 860]
 
