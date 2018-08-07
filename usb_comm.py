@@ -30,13 +30,15 @@ AS7262_ID_MESSAGE = "AS7262"
 AS7263_ID_MESSAGE = "AS7263"
 BOTH__ID_MESSAGE = "Both AS726X"
 
+END_CHAR = '\r'
+
 USB_DATA_BYTE_SIZE = 40
 IN_ENDPOINT = 0x81
 OUT_ENDPOINT = 0x02
 
 # Serial communication settings
-# BAUDRATE = 115200
-BAUDRATE = 114286
+BAUDRATE = 115200
+# BAUDRATE = 114286
 STOPBITS = serial.STOPBITS_ONE
 PARITY = serial.PARITY_NONE
 BYTESIZE = serial.EIGHTBITS
@@ -148,15 +150,17 @@ class PSoC_USB(object):
         logging.info("serial ports found: {0}".format(available_ports))
         for port in available_ports:
             try:
+
                 logging.info("writing to port: {0}".format(port.port))
                 device = serial.Serial(port.port, baudrate=BAUDRATE, stopbits=STOPBITS,
                                        parity=PARITY, bytesize=BYTESIZE, timeout=1)
                 device.flushInput()
                 device.flushOutput()
+                sent_message = b"ID\r"
+                device.write(sent_message)
 
-                device.write(b"ID-")
                 time.sleep(0.5)
-                from_device = device.read_all()
+                from_device = device.read_all().decode("utf-8")
                 logging.info("From the device: {0}".format(from_device))
                 if from_device == PSOC_ID_MESSAGE:
                     logging.info("Found serial device")
@@ -165,10 +169,13 @@ class PSoC_USB(object):
                     self.connected = True
                     return device
 
+                device.close()
+
             except Exception as exception:
                 # not the correct device
+                exc_type, exc_obj, exc_tb = sys.exc_info()
                 logging.info("No device at port: {0}".format(port))
-                logging.info("Exception: {0}".format(exception))
+                logging.info("Exception: {0} at {1}".format(exception, exc_tb.tb_lineno))
 
     def usb_write(self, message, endpoint=OUT_ENDPOINT):
         # logging.debug("writing message: {0} with a device: {1}".format(message, self.device_type))
@@ -183,8 +190,8 @@ class PSoC_USB(object):
             return
         try:
 
-            logging.debug("write to usb/uart: {0}-".format(message))
-            self.device.write("{0}-".format(message).encode('utf-8'))
+            logging.debug("write to usb/uart: {0}{1}".format(message, END_CHAR))
+            self.device.write("{0}{1}".format(message, END_CHAR).encode('utf-8'))
             while self.device.out_waiting != 0:
                 print(self.device.out_waiting)
 
@@ -226,7 +233,7 @@ class PSoC_USB(object):
                                           encoding=encoding, timeout=timeout)
 
         elif self.device_type == DeviceTypes.serial:
-            return self.usb_read_data_serial()
+            return self.usb_read_data_serial(encoding=encoding)
 
     def usb_read_data_serial(self, encoding=None, timeout=3000):
         if not self.connected:
@@ -251,7 +258,7 @@ class PSoC_USB(object):
                 logging.error("Error in reading")
         elif encoding == 'string':
             # change bytes to string and change to regular string not byte string
-            return usb_input.tostring().decode("utf-8")
+            return usb_input.decode("utf-8")
         else:  # no encoding so just return raw data
             return usb_input
 

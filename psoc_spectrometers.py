@@ -12,6 +12,8 @@ import tkinter as tk
 # local files
 import device_settings
 import main_gui
+import pyplot_embed
+import spectro_frame
 import usb_comm
 
 __author__ = 'Kyle Vitautas Lopin'
@@ -26,16 +28,15 @@ class PSoC(object):
         self.sensors = []
         if self.sensors_list:
             for sensor in self.sensors_list:
-                print('adding sensor: ', sensor)
                 self.sensors.append(AS726X(self.usb, sensor, master_app))
 
-    def initialize_device(self):
-        if self.sensors:
-            for sensor in self.sensors:
-                sensor.set_gain(0)
-                sensor.set_integration_time(1428)
-                sensor.set_LED_power(False)
-                sensor.set_LED_power(0)
+    # def initialize_device(self, frame: spectro_frame.ColorSpectorFrame):
+    #     if self.sensors:
+    #         for sensor in self.sensors:
+    #             sensor.set_gain(0)
+    #             sensor.set_integration_time(1428)
+    #             sensor.set_LED_power(False)
+    #             sensor.set_LED_power(0)
 
 
 class USB(object):
@@ -72,7 +73,8 @@ class AS726X(object):
         self.after_delay = int(max(float(self.settings.integration_time), 200))
         self.currently_running = False
 
-    def initialize_device(self):
+    def initialize_device(self, new_master_graph: pyplot_embed.SpectroPlotter):
+        self.master.graph = new_master_graph
         # initialize all the settings in case the program restarts
         self.set_gain(0)
         self.set_integration_time(1428)
@@ -92,27 +94,24 @@ class AS726X(object):
     def set_read_period(self, read_period_ms: float):
         self.usb.usb_write("SET_CONT_READ_PERIOD|{0}".format(str(int(read_period_ms)).zfill(5)))
 
-    def start_continuous_read(self):
-        print("starting to read with rate: ", self.after_delay)
+    def start_continuous_read(self, graph):
         self.reading = True
-        self.reading_run()
+        self.reading_run(graph)
 
-    def reading_run(self):
+    def reading_run(self, graph):
         # self.reading = self.master.after((self.settings.read_period - 100), self.reading_run)
         # print("try to read", time.time())
         if self.reading:
-            self.read_once()
+            self.read_once(graph)
             self.master.after(int(self.settings.read_period - 100), self.reading_run)
 
     def data_read(self):
         while not self.termination_flag:
             logging.debug("data read call: {0}".format(self.termination_flag, hex(id(self.termination_flag))))
-            print(hex(id(self.termination_flag)))
             self.data_acquired_event.wait(timeout=0.2)  # wait for the usb communication thread to
             self.data_acquired_event.clear()
             if not self.data_queue.empty():  # make sure there is data in the queue to process
                 new_data = self.data_queue.get()
-                print("got data queue: ", new_data)
                 self.master.update_graph(new_data)
 
         logging.debug("exiting data read")
@@ -124,19 +123,20 @@ class AS726X(object):
         # self.usb.usb_write("AS7262|STOP")
         self.reading = False
 
-    def read_once(self, flash_on=False):
+    def read_once(self, graph, flash_on=False):
         logging.debug("read once")
         if flash_on:
             self.usb.usb_write("{0}|READ_SINGLE|FLASH".format(self.sensor_type))
         else:
             self.usb.usb_write("{0}|READ_SINGLE|NO_FLASH".format(self.sensor_type))
+        # print(self.settings.integration_time)
+        time.sleep(self.settings.integration_time/1000.+0.2)
+        self.read_data(graph)
 
-        self.read_data()
-
-    def read_data(self):
+    def read_data(self, graph):
         data = self.usb.read_all_data()
         if data:
-            self.master.update_graph(data, self.sensor_type)
+            graph.update_data(data)
         else:
             self.master.device_not_working()
 

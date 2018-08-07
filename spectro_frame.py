@@ -2,7 +2,9 @@
 
 """ File to start for a Graphical User interface for the AS726X Sparkfun breakout board connected
 to a PSoC controller.  The data is saved in the data_class file, pyplot_embed has a
-matplotlib graph embedded into a tk.Frame to display the data and usb_comm communicates with the device. """
+matplotlib graph embedded into a tk.Frame to display the data and usb_comm communicates with the device.
+This file shows a single frame that can be packed into a ttk notebook
+"""
 
 import logging
 import tkinter as tk
@@ -16,16 +18,8 @@ import device_settings
 import psoc_spectrometers
 import pyplot_embed
 import reg_toplevel
-import spectro_frame
 
 __author__ = 'Kyle Vitautas Lopin'
-
-# if getattr(sys, 'frozen', False):
-#     # we are running in a |PyInstaller| bundle
-#     basedir = sys._MEIPASS
-# else:
-#     # we are running in a normal Python environment
-#     basedir = os.path.dirname(__file__)
 
 
 class DisplayTypes(Enum):
@@ -34,62 +28,27 @@ class DisplayTypes(Enum):
     concentration = u"\u03bcmol / (cm\u00B2 \u00D7 s) (\u00D7 10\u207B\u2078)"
 
 
-class SpectrometerGUI(tk.Tk):
-    """ Class to display the controls and data of a color sensor or a spectrometer.  Currently displays the
-     current spectrum.
+class ColorSpectorFrame(ttk.Frame):
+    def __init__(self, master, parent_notebook, sensor, device):
+        ttk.Frame.__init__(self, parent_notebook)
+        self.sensor = sensor
+        self.settings = sensor.settings
+        main_frame = tk.Frame(self)
+        main_frame.pack(side='top', fill=tk.BOTH, expand=True)
 
-     TODO: add a time course notebook and move the current spectrum to a separate notebook. """
+        # make the graph frame, the parent class is a tk.Frame
+        self.graph = pyplot_embed.SpectroPlotter(main_frame, self.sensor)
+        # print('plot: ', sensor, self.graph)
+        self.graph.pack(side='left', fill=tk.BOTH, expand=True)
 
-    def __init__(self, parent=None):
-        """
-        Initialize the graphical user interface by:
-        1) Start the logging module
-        2) Attach the device using the psoc_spectrometer call, this module will abstract all operations with
-        the actual device through the settings, which are all traced to call the proper functions when any of
-        the variables are changed.
-        3) Make the graph area using pyplot_embed that will display the intensity versus wavelength data.
-        4) Make a frame that contains all the buttons used to control the device.
-        5) Make a frame to display
+    # make command buttons
+        self.buttons_frame = ButtonFrame(main_frame, sensor.settings, self.graph, device)
+        self.buttons_frame.pack(side='left', padx=10)
 
-        :param parent:  any parent program that could call this GUI
-        """
-
-        tk.Tk.__init__(self, parent)
-        logging.basicConfig(format='%(asctime)s %(module)s %(lineno)d: %(levelname)s %(message)s',
-                            datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
-
-        # make the main frame with the graph and button area
-        # main_frame = tk.Frame(self)
-        # main_frame.pack(side='top', fill=tk.BOTH, expand=True)
-
-        # attach the actual device and make an easier to use alias for the
-        self.device = psoc_spectrometers.PSoC(self)
-
-        # check what devices are attached
-
-        self.sensors = self.device.sensors
-        self.notebook = ttk.Notebook(self)
-
-        for i, possible_sensor in enumerate(["AS7262", "AS7263"]):
-            for sensor in self.device.sensors:
-                if sensor.sensor_type == possible_sensor:
-                    new_sensor_frame = spectro_frame.ColorSpectorFrame(self, self.notebook, sensor, self.device)
-                    self.notebook.add(new_sensor_frame, text=sensor.sensor_type)
-        self.notebook.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
-
-
-        # # make the graph frame, the parent class is a tk.Frame
-        # self.graph = pyplot_embed.SpectroPlotter(main_frame, self.sensors)
-        # self.graph.pack(side='left', fill=tk.BOTH, expand=True)
-        #
-        # # make command buttons
-        # self.buttons_frame = ButtonFrame(main_frame, self.graph, self.device, self.device.sensors)
-        # self.buttons_frame.pack(side='left', padx=10)
-        #
-        # # make the status frame with the connect button and status information
-        self.status_frame = StatusFrame(self, self.device)
-        self.status_frame.pack(side='top', fill=tk.X)
-        # self.device.initialize_device()
+        # make the status frame with the connect button and status information
+        # self.status_frame = StatusFrame(self, device)
+        # self.status_frame.pack(side='top', fill=tk.X)
+        sensor.initialize_device(self.graph)
 
     def update_graph(self, data: tuple):
         """
@@ -125,71 +84,47 @@ class SpectrometerGUI(tk.Tk):
             return True
         return False
 
-
 BUTTON_PADY = 5
 
 
 class ButtonFrame(tk.Frame):
-
-    def __init__(self, parent: tk.Frame, graph: pyplot_embed.SpectroPlotter, device, sensors):
-        """
-
-        :param parent:
-        :param settings:
-        :param graph:
-        :param device:
-        """
-        tk.Frame.__init__(self, parent)
-        sensor_frame = tk.Frame(self)
-        if sensors:  # make sure a sensor is attached to make its variable options
-            for i, sensor in enumerate(sensors):
-                AS726XButtonFrame(sensor_frame, sensor, graph, device).pack(side=tk.LEFT)
-
-        sensor_frame.pack(side=tk.TOP)
-
-        UniversalButtonsAS726X(self, device, graph).pack(side=tk.BOTTOM)
-
-
-class AS726XButtonFrame(tk.Frame):
     """ Frame to contain all the buttons the user can use to control the settings and use of the device """
 
-    def __init__(self, parent: tk.Frame, sensor: psoc_spectrometers,  # device_settings.DeviceSettings_AS7262): type hinting issue
+    def __init__(self, parent: tk.Frame, settings,  # device_settings.DeviceSettings_AS7262): type hinting issue
                  graph: pyplot_embed.SpectroPlotter, device):
         """
         Class to make all the buttons needed to control a AS7262 sensor that is controlled by a PSoC.
 
         :param parent:  tkinter Frame or Tk this frame is embedded in.
-        :param seensor:  the settings for the PSoC controlled AS7262.  The settings are all traced to
+        :param settings:  the settings for the PSoC controlled AS7262.  The settings are all traced to
         the approriat functions
         :param graph:  graph area, this is needed because it also contains the data class to be saved also
         """
         tk.Frame.__init__(self, parent)
         self.master = parent
-        self.settings = sensor.settings  # type: device_settings.DeviceSettings_AS7262
+        self.settings = settings  # type: device_settings.AS726X_Settings
         self.graph = graph
-        self.device = device  # type: psoc_spectrometers.PSoC
+        self.device = device  # type: psoc_spectrometers.AS7262
 
-        self.config(relief=tk.GROOVE, bd=3)
-        tk.Label(self, text=sensor.sensor_type).pack(side='top', pady=BUTTON_PADY)
         # make all the buttons and parameters
         # Gain settings
         tk.Label(self, text="Gain Setting:").pack(side='top', pady=BUTTON_PADY)
         gain_var_options = ["1", "3.7", "16", "64"]
         # gain_var_options = device_settings.GAIN_SETTING_MAP.keys()
-        tk.OptionMenu(self, self.settings.gain_var, *gain_var_options).pack(side='top', pady=BUTTON_PADY)
+        tk.OptionMenu(self, settings.gain_var, *gain_var_options).pack(side='top', pady=BUTTON_PADY)
 
         # set the integrations time, give them just a few options not the full 255 options
         tk.Label(self, text="Integration time (ms):").pack(side='top', pady=BUTTON_PADY)
         custom_range = [1, 2, 4, 8, 16, 32, 64, 128, 255]
-        integration_time_var = ["{:.1f}".format(x*5.6) for x in custom_range]
+        integration_time_var = ["{:.1f}".format(x * 5.6) for x in custom_range]
 
-        tk.OptionMenu(self, self.settings.integration_time_var, *integration_time_var).pack(side='top', pady=BUTTON_PADY)
+        tk.OptionMenu(self, settings.integration_time_var, *integration_time_var).pack(side='top', pady=BUTTON_PADY)
 
         # make LED control widgets
         tk.Label(self, text="LED power (mA):").pack(side='top', pady=BUTTON_PADY)
         LED_power_options = ["12.5 mA", "25 mA", "50 mA", "100 mA"]
         # LED_power_options = device_settings.LED_POWER_MAP.keys()
-        tk.OptionMenu(self, self.settings.LED_power_level_var, *LED_power_options).pack(side='top', pady=BUTTON_PADY)
+        tk.OptionMenu(self, settings.LED_power_level_var, *LED_power_options).pack(side='top', pady=BUTTON_PADY)
 
         self.LED_button = tk.Button(self, text="Turn LED On", command=self.LED_toggle)
         self.LED_button.pack(side='top', pady=BUTTON_PADY)
@@ -211,6 +146,27 @@ class AS726XButtonFrame(tk.Frame):
 
         # button to save the data, this will open a toplevel with the data printed out, and an option to save to file
         tk.Button(self, text="Save Data", command=self.save_data).pack(side="top", pady=BUTTON_PADY)
+
+        # radio buttons to choose what data type to display
+        tk.Label(self, text="Data Display Type:").pack(side="top", pady=BUTTON_PADY)
+        # self.display_type = tk.StringVar()
+        self.display_type = self.settings.measurement_mode_var
+        self.display_type.set(DisplayTypes.counts.value)
+        self.display_type.trace("w", self.toggle_display_type)
+        tk.Radiobutton(self, text=DisplayTypes.counts.value, variable=self.display_type,
+                       value=DisplayTypes.counts.value).pack(side="top", pady=BUTTON_PADY)
+        tk.Radiobutton(self, text=DisplayTypes.power.value, variable=self.display_type,
+                       value=DisplayTypes.power.value).pack(side="top", pady=BUTTON_PADY)
+        tk.Radiobutton(self, text=DisplayTypes.concentration.value, variable=self.display_type,
+                       value=DisplayTypes.concentration.value).pack(side="top", pady=BUTTON_PADY)
+
+        # button to debug the sensor by writing or reading the sensors (virtual) registers
+        tk.Button(self, text="Register Check", command=lambda: reg_toplevel.RegDebugger(self.master, settings.device)
+                  ).pack(side="top", pady=BUTTON_PADY)
+
+        # tk.Button(self, text="Check USB Data", command=self.read_just_data).pack(side="top", pady=BUTTON_PADY)
+
+        # tk.Button(self, text="Check commands", command=self.get_message).pack()
 
     def update_settings(self, settings):  # hack
         self.settings = settings
@@ -272,7 +228,7 @@ class AS726XButtonFrame(tk.Frame):
         """
         self.read_button.config(state=tk.DISABLED)
         logging.debug("read once with flash: {0}".format(self.use_flash.get()))
-        self.settings.single_read(self.use_flash.get())
+        self.settings.single_read(self.graph, self.use_flash.get())
         self.read_button.config(state=tk.ACTIVE)
 
     def read_just_data(self):
@@ -283,35 +239,6 @@ class AS726XButtonFrame(tk.Frame):
         Save the set of data that is being displayed
         """
         self.graph.data.save_data()
-
-
-class UniversalButtonsAS726X(tk.Frame):
-    def __init__(self, parent: tk.Frame, device, graph: pyplot_embed.SpectroPlotter):
-        tk.Frame.__init__(self, parent)
-        self.graph = graph
-        # radio buttons to choose what data type to display
-        tk.Label(self, text="Data Display Type:").pack(side="top", pady=BUTTON_PADY)
-        # self.display_type = tk.StringVar()
-        self.display_type = tk.StringVar()
-        self.display_type.set(DisplayTypes.counts.value)
-        self.display_type.trace("w", self.toggle_display_type)
-
-        top_frame = tk.Frame(self)
-        top_frame.pack(side=tk.TOP)
-        ttk.Radiobutton(top_frame, text=DisplayTypes.counts.value, variable=self.display_type,
-                        value=DisplayTypes.counts.value).pack(side=tk.LEFT, pady=BUTTON_PADY)
-        ttk.Radiobutton(top_frame, text=DisplayTypes.power.value, variable=self.display_type,
-                        value=DisplayTypes.power.value).pack(side=tk.LEFT, pady=BUTTON_PADY)
-        ttk.Radiobutton(self, text=DisplayTypes.concentration.value, variable=self.display_type,
-                        value=DisplayTypes.concentration.value).pack(side=tk.TOP, pady=BUTTON_PADY)
-
-        # button to debug the sensor by writing or reading the sensors (virtual) registers
-        tk.Button(self, text="Register Check", command=lambda: reg_toplevel.RegDebugger(self.master, device)
-                  ).pack(side="top", pady=BUTTON_PADY)
-
-        # tk.Button(self, text="Check USB Data", command=self.read_just_data).pack(side="top", pady=BUTTON_PADY)
-
-        # tk.Button(self, text="Check commands", command=self.get_message).pack()
 
     def toggle_display_type(self, *args):
         logging.debug("Changing display type to: {0}".format(self.display_type.get()))
@@ -330,11 +257,12 @@ class StatusFrame(tk.Frame):
         """
         tk.Frame.__init__(self, parent)
         self.master = parent  # type: SpectrometerGUI
-        self.device = device  # type: psoc_spectrometers.PSoC
+
+        self.device = device  # type: psoc_spectrometers.AS7262
         self.status_str = tk.StringVar()
+
         if device.usb.spectrometer:
-            # self.status_str.set("Spectrometer: {0} connected".format(device.usb.spectrometer.decode('utf-8')))
-            self.status_str.set("Spectrometer: {0} connected".format(device.usb.sensor_message))
+            self.status_str.set("Spectrometer: {0} connected".format(device.usb.received_message))
         elif device.usb.connected:
             self.status_str.set("Sensor not found on PSoC")
         elif device.usb.found:
@@ -346,7 +274,9 @@ class StatusFrame(tk.Frame):
         self.status_label.pack(side='left')
         self.status_label.bind("<Button-1>", self.device_connection_test)
 
+
     def update_status(self, message):
+
         self.status_str.set(message)
         self.status_label = tk.Label(self, textvariable=self.status_str)
 
@@ -355,8 +285,9 @@ class StatusFrame(tk.Frame):
             self.status_label = tk.Label(self, textvariable=self.status_str)
             psoc_spectrometers.ConnectionStatusToplevel(self.master, self.status_str)
 
-        # self.status_str.set(message)
-        # self.status_label = tk.Label(self, textvariable=self.status_str)
+            # self.status_str.set(message)
+            # self.status_label = tk.Label(self, textvariable=self.status_str)
+
 
     def device_connection_test(self, *args):
         logging.debug("Checking the status of the device")
@@ -365,7 +296,7 @@ class StatusFrame(tk.Frame):
 
 
 if __name__ == '__main__':
-    app = SpectrometerGUI()
+    app = ColorSpectorFrame()
     app.title("Spectrograph")
     app.geometry("900x750")
     app.mainloop()

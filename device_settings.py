@@ -69,7 +69,7 @@ class AS726X_Settings(object):
         self.device = device
         self.type = type
         logging.debug('type: {0}'.format(type))
-        self.gain = GainSetting.GAIN_SETTING_1X
+        self.gain = GainSetting.GAIN_SETTING_1X.value
         self.measurement_mode = BankMode.BANK_MODE_3.value
         self.integration_time = 5.6 * 255
         self.LED_power_level = LEDPowerSetting.LED_POWER_12_5_mA
@@ -111,6 +111,8 @@ class AS726X_Settings(object):
             self.wavelengths = WAVELENGTH_AS7263
         logging.debug('type: {0}; wavelengthss: {1}'.format(type, self.wavelengths))
 
+        self.graph = None
+
     def gain_var_set(self, *args):
         # self.gain = GAIN_SETTING_MAP[self.gain_var.get()].value
         self.gain = GAIN_SETTING_MAP[self.gain_var.get()].value
@@ -132,23 +134,24 @@ class AS726X_Settings(object):
             self.LED_on = True
         else:
             self.LED_on = False
-        print("Led: ", self.LED_on)
         self.device.set_LED_power(self.LED_on)
 
     def read_period_set(self, *args):
         self.read_period = 1000.0 * float(self.read_period_var.get().split()[0])
         self.device.set_read_period(self.read_period)
 
-    def toggle_read(self, *args):
+    def toggle_read(self, graph, *args):
+        self.graph = graph
         if self.reading.get():  # has just been set to true
             # run_integration_time = max(self.integration_time, 200)
             # logging.debug("starting continuous read with integration time: {0}".format(run_integration_time))
-            self.device.start_continuous_read()
+            self.device.start_continuous_read(graph)
         else:
             self.device.stop_read()
 
-    def single_read(self, flash=False):
+    def single_read(self, graph, flash=False):
         # save run settings
         self.run_settings = {'gain': self.gain, 'integration time': self.integration_time, 'flash': flash,
                              'power': self.LED_power_level, 'LED on': self.LED_on}
-        self.device.read_once(flash)
+        # print('single read: ', self)
+        self.device.read_once(graph, flash)
