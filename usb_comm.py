@@ -251,9 +251,9 @@ class PSoC_USB(object):
             pass
             # return convert_uint8_uint16(usb_input)
         elif encoding == "float32":
-            if (len(usb_input) % 4) == 0:
+            if (len(usb_input)) == 25:
                 # return struct.iter_unpack('f', usb_input)
-                return struct.unpack('>ffffff', usb_input)
+                return struct.unpack('>ffffffB', usb_input)
             else:
                 logging.error("Error in reading")
         elif encoding == 'string':
@@ -289,7 +289,7 @@ class PSoC_USB(object):
         elif encoding == "float32":
             if (len(usb_input) % 4) == 0:
                 # return struct.iter_unpack('f', usb_input)
-                return struct.unpack('>ffffff', usb_input)
+                return struct.unpack('>ffffffB', usb_input)
             else:
                 logging.error("Error in reading")
         elif encoding == 'string':

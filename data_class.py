@@ -92,7 +92,7 @@ class SpectrometerData(object):
         logging.debug("updating data")
         self.counts = data_counts
         self.power_levels = [x*self.power_conversion for x in data_counts]
-        for i, x in enumerate(self.counts):
+        for i, x in enumerate(self.counts[:5]):
             self.conc_levels[i] = x * self.concentration_conversion[i]
 
         self.measurement_mode = self.settings.measurement_mode_var.get()

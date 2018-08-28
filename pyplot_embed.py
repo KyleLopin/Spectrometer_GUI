@@ -5,7 +5,7 @@
 # standard libraries
 import logging
 import tkinter as tk
-
+from tkinter import messagebox
 # installed libraries
 import matplotlib
 matplotlib.use("TkAgg")
@@ -59,7 +59,11 @@ class SpectroPlotter(tk.Frame):
         else:
             self.data.set_data_type()
         display_data = self.data.current_data
+        print(display_data)
+        if max(display_data) > COUNT_SCALE[-1]:
 
+            messagebox.showerror("Error", "Error in getting data.  Please submit bug report")
+            return
         while max(display_data) > COUNT_SCALE[self.scale_index]:
             self.scale_index += 1
             self.axis.set_ylim([0, COUNT_SCALE[self.scale_index]])

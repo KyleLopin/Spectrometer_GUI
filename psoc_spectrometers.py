@@ -8,7 +8,7 @@ import queue
 import threading
 import time
 import tkinter as tk
-
+from tkinter import messagebox
 # local files
 import device_settings
 import main_gui
@@ -135,9 +135,14 @@ class AS726X(object):
 
     def read_data(self, graph):
         data = self.usb.read_all_data()
-        if data:
-            graph.update_data(data)
+        print(data)
+        if data and (data[6] == 0):
+            graph.update_data(data[:6])
+        elif data[6] == 255:
+            logging.info("sensor has problem, error byte set")
+            messagebox.showerror("Error", "Error in getting data.  Please submit bug report")
         else:
+            logging.info("device not working ch")
             self.master.device_not_working()
 
     def set_LED_power(self, LED_on):
