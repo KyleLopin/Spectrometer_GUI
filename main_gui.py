@@ -131,7 +131,7 @@ BUTTON_PADY = 5
 
 class ButtonFrame(tk.Frame):
 
-    def __init__(self, parent: tk.Frame, graph: pyplot_embed.SpectroPlotter, device, sensors):
+    def __init__(self, parent: tk.Frame, graph, device, sensors):
         """
 
         :param parent:
@@ -154,7 +154,7 @@ class AS726XButtonFrame(tk.Frame):
     """ Frame to contain all the buttons the user can use to control the settings and use of the device """
 
     def __init__(self, parent: tk.Frame, sensor: psoc_spectrometers,  # device_settings.DeviceSettings_AS7262): type hinting issue
-                 graph: pyplot_embed.SpectroPlotter, device):
+                 graph, device):
         """
         Class to make all the buttons needed to control a AS7262 sensor that is controlled by a PSoC.
 
@@ -286,7 +286,7 @@ class AS726XButtonFrame(tk.Frame):
 
 
 class UniversalButtonsAS726X(tk.Frame):
-    def __init__(self, parent: tk.Frame, device, graph: pyplot_embed.SpectroPlotter):
+    def __init__(self, parent: tk.Frame, device, graph):
         tk.Frame.__init__(self, parent)
         self.graph = graph
         # radio buttons to choose what data type to display

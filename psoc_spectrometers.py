@@ -18,6 +18,7 @@ import usb_comm
 
 __author__ = 'Kyle Vitautas Lopin'
 
+DEVICE_TYPE = "WiPy"
 
 class PSoC(object):
     def __init__(self, master_app: tk.Tk):
@@ -26,7 +27,8 @@ class PSoC(object):
         self.usb = usb_device.usb  # alias to easier attribute
         self.sensors_list = self.usb.spectrometer
         self.sensors = []
-        if self.sensors_list:
+        logging.debug("sensor list: {0}".format(self.sensors_list))
+        if self.sensors_list and "No Sensor" not in self.sensors_list[0]:
             for sensor in self.sensors_list:
                 self.sensors.append(AS726X(self.usb, sensor, master_app))
 
@@ -73,7 +75,7 @@ class AS726X(object):
         self.after_delay = int(max(float(self.settings.integration_time), 200))
         self.currently_running = False
 
-    def initialize_device(self, new_master_graph: pyplot_embed.SpectroPlotter):
+    def initialize_device(self, new_master_graph):
         self.master.graph = new_master_graph
         # initialize all the settings in case the program restarts
         self.set_gain(0)
@@ -138,7 +140,7 @@ class AS726X(object):
         print(data)
         if data and (data[6] == 0):
             graph.update_data(data[:6])
-        elif data[6] == 255:
+        elif data and data[6] == 255:
             logging.info("sensor has problem, error byte set")
             messagebox.showerror("Error", "Error in getting data.  Please submit bug report")
         else:

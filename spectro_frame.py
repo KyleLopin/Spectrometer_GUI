@@ -91,7 +91,7 @@ class ButtonFrame(tk.Frame):
     """ Frame to contain all the buttons the user can use to control the settings and use of the device """
 
     def __init__(self, parent: tk.Frame, settings,  # device_settings.DeviceSettings_AS7262): type hinting issue
-                 graph: pyplot_embed.SpectroPlotter, device):
+                 graph, device):
         """
         Class to make all the buttons needed to control a AS7262 sensor that is controlled by a PSoC.
 

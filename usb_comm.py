@@ -138,10 +138,10 @@ class PSoC_USB(object):
         self.sensor_message = received_message
         if received_message == "Both AS726X":
             self.spectrometer = ["AS7262", "AS7263"]
-        elif received_message == "No Sensor":
+        elif "No Sensor" in received_message:
             self.spectrometer = []
         else:
-            self.spectrometer = [received_message]
+            self.spectrometer = [received_message[0:6]]
 
         logging.info("sensors attached: {0}".format(received_message))
 
