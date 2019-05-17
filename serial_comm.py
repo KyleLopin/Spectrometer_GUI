@@ -22,6 +22,7 @@ BYTE_SIZE = serial.EIGHTBITS
 class WiPySerial:
     def __init__(self):
         self.device = self.auto_find_com_port()
+        self.read_all()
         self.gain = 1
 
     @staticmethod
@@ -59,7 +60,30 @@ class WiPySerial:
         self.device.write(message+b'\r')
 
     def read_as7262(self):
-        pass
+        self.write(b"AS7262_range_read()")
+        data_lines = self.read_all()
+        for data in data_lines:
+            print('data: ', data)
+            if b'AS7262 RAW DATA:' in data:
+                raw_data = self.parse_data_str(data)
+                if self.check_if_saturated(raw_data):
+                    # TODO: put popup warning here
+                    print("ERROR, REREAD")
+            if b'AS7262 CAL DATA:' in data:
+                calibrated_data = self.parse_data_str(data)
+        print('raw: ', raw_data)
+        print('calibrated: ', calibrated_data)
+        return {'raw': raw_data, 'calibrated': calibrated_data}
+
+    @staticmethod
+    def parse_data_str(data_str):
+        data_str = data_str.split(b'[')[1].split(b']')[0]
+        return [float(x) for x in data_str.split(b',')]
+
+    @staticmethod
+    def check_if_saturated(data_list):
+        print('max: ', max(data_list), data_list)
+        return max(data_list) > 65000  # 16 bit adc
 
     def calibrate_as7262(self):
         print('start')
@@ -86,7 +110,6 @@ class WiPySerial:
                     self.device.write(b'as7262.set_gain(1)')
                 time.sleep(0.2)
                 self.read_all()
-
 
 
 if __name__ == '__main__':

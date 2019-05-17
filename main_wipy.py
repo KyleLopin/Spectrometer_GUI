@@ -8,7 +8,7 @@ serial_comm communicates with the device. """
 
 # standard libraries
 import logging
-import time
+from datetime import date
 import tkinter as tk
 from tkinter import ttk
 # local files
@@ -34,14 +34,16 @@ class AS726X_GUI_v1(tk.Tk):
                                        command=self.read_as7262)
         self.as7276_button.pack(side='left', padx=5, pady=20)
 
-        # while True:
-        #     # self.device.write(b'AS7262_read()\r')
-        #     # time.sleep(2)
-        #     self.device.write(b'print("Hello")\r')
-        #     self.device.read_all()
+        today = str(date.today())
+        print(type(today), today)
+        self.as7262_filename = today + "_as7262_reads.csv"
 
-    def read_as7262(self):
-        self.device.calibrate_as7262()
+    def read_as7262(self, save=False):
+        all_data = self.device.read_as7262()
+        print(all_data)
+
+    def read_and_save_as7262(self):
+        self.read_as7262(save=True)
 
 
 if __name__ == '__main__':
