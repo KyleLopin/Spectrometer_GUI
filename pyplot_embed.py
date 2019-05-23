@@ -123,10 +123,22 @@ class SpectroPlotterBasic(tk.Frame):
         self.axis.set_xlabel("wavelength (nm)")
         self.axis.set_xlim([400, 900])
 
-        self.axis.set_ylim([0, COUNT_SCALE[self.scale_index]])
+        # self.axis.set_ylim([0, 50000)
         self.axis.set_ylabel(r'$\mu$W/cm$^2$/s')
         # self.axis.set_ylabel('Counts')
-        self.lines = None
+        self.lines = {}
 
-    def update_data(self, x_data, y_data):
-        pass
+    def update_data(self, x_data, y_data, label):
+        print("update data")
+        print(label, x_data, y_data)
+        print(label in self.lines)
+        if label in self.lines:
+            self.lines[label].set_xdata(x_data)
+            self.lines[label].set_ydata(y_data)
+        else:
+            newline, = self.axis.plot(x_data, y_data, label=label)
+            self.lines[label] = newline
+        self.axis.relim()
+        self.axis.autoscale_view()
+        self.canvas.draw()
+        print('lines: ', self.lines)

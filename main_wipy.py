@@ -18,6 +18,9 @@ import serial_comm
 __author__ = 'Kyle Vitautas Lopin'
 
 
+AS7262_WAVELENGTHS = [450, 500, 550, 570, 600, 650]
+AS7263_WAVELENGTHS = [610, 680, 730, 760, 810, 860]
+
 class AS726X_GUI_v1(tk.Tk):
 
     def __init__(self, parent=None):
@@ -32,7 +35,11 @@ class AS726X_GUI_v1(tk.Tk):
 
         self.as7276_button = tk.Button(self, text="AS7262 read\n(small box)", width=20,
                                        command=self.read_as7262)
-        self.as7276_button.pack(side='left', padx=5, pady=20)
+        self.as7276_button.pack(side='top', padx=5, pady=20)
+
+        self.as7276_range_button = tk.Button(self, text="AS7262 read range\n(small box)", width=20,
+                                             command=self.read_as7262_range)
+        self.as7276_range_button.pack(side='top', padx=5, pady=20)
 
         today = str(date.today())
         print(type(today), today)
@@ -40,10 +47,20 @@ class AS726X_GUI_v1(tk.Tk):
 
     def read_as7262(self, save=False):
         all_data = self.device.read_as7262()
-        print(all_data)
+        print('end: ', all_data)
+        all_data.print_data(with_header=True)
+
+    def read_as7262_range(self):
+        data_range = self.device.read_as7262_read_range()
+        print(data_range)
+        for key, data in data_range.items():
+            print(key, data)
+            print('int time: {0}| {1}'.format(key, data.print_data()))
+            self.graph.update_data(AS7262_WAVELENGTHS, data.calibrated_data, key)
 
     def read_and_save_as7262(self):
-        self.read_as7262(save=True)
+        data = self.read_as7262(save=True)
+        print('end2: ', data)
 
 
 if __name__ == '__main__':
