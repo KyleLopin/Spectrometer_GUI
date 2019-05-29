@@ -30,9 +30,9 @@ CONCENTRATION_SCALE_FACTOR = 10**8
 
 class Data(object):
     def __init__(self, sensors: list):
-        print('if: ', sensors)
         self.data = []
         self.wavelengths = None
+        self.sensors = sensors
         if sensors:
             for sensor in sensors:  # type: psoc_spectrometers.AS726X
                 self.data.append(SpectrometerData(sensor.settings))
@@ -40,19 +40,28 @@ class Data(object):
         # figure out how to deal with current_data here
         self.current_data = None
 
-    def update_data(self, data_counts, sensor_type):
-        if sensor_type == "AS7262":
-            self.current_data = data_counts
-            self.wavelengths = WAVELENGTH_AS7262
-        elif sensor_type == "AS7263":
-            self.current_data = data_counts
-            self.wavelengths = WAVELENGTH_AS7263
+    def update_data(self, data_counts):
+        if self.sensors:
+            for i, sensor in enumerate(self.sensors):
+                # print('sensor_types:', sensor.sensor_type)
+                if i == 0:
+                    if sensor.sensor_type == "AS7262":
+                        self.current_data = data_counts
+                        self.wavelengths = WAVELENGTH_AS7262
+                    elif sensor.sensor_type == "AS7263":
+                        self.current_data = data_counts
+                        self.wavelengths = WAVELENGTH_AS7263
+                else:
+                    if sensor.sensor_type == "AS7262":
+                        self.wavelengths.append(WAVELENGTH_AS7262)
+                    elif sensor.sensor_type == "AS7263":
+                        self.wavelengths.append(WAVELENGTH_AS7263)
 
-    def set_data_type(self):
+    def set_data_type(self, data_type):
         if not self.data:
             return
         for data in self.data:
-            data.set_data_type()
+            data.set_data_type(data_type)
 
     def calculate_conversion_factors(self):
         if not self.data:
@@ -63,11 +72,10 @@ class Data(object):
 
 class SpectrometerData(object):
     def __init__(self, settings):
-        print('c1: ', settings)
+        # print('c1: ', settings)
         self.counts = None
         self.power_levels = None
-        print(settings)
-        print(dir(settings))
+        self.measurement_mode = None
         self.conc_levels = [0] * len(settings.wavelengths)
         self.current_data = None
 
@@ -84,20 +92,23 @@ class SpectrometerData(object):
         logging.debug("updating data")
         self.counts = data_counts
         self.power_levels = [x*self.power_conversion for x in data_counts]
-        for i, x in enumerate(self.counts):
+        for i, x in enumerate(self.counts[:5]):
             self.conc_levels[i] = x * self.concentration_conversion[i]
 
-        measurement_mode = self.settings.measurement_mode_var.get()
-        logging.debug("making current data of type: {0}".format(measurement_mode))
+        self.measurement_mode = self.settings.measurement_mode_var.get()
+        logging.debug("making current data of type: {0}".format(self.measurement_mode))
         logging.debug("Converted counts: {0}".format(self.counts))
         logging.debug("to {0} power levels".format(self.power_levels))
         logging.debug("and {0} mols".format(self.conc_levels))
 
         self.set_data_type()
 
-    def set_data_type(self):
-
-        measurement_mode = self.settings.measurement_mode_var.get()
+    def set_data_type(self, measurement_mode=None):
+        if not measurement_mode:
+            measurement_mode = self.measurement_mode
+        else:
+            self.measurement_mode = measurement_mode
+        # measurement_mode = self.settings.measurement_mode_var.get()
         logging.debug("setting data type: {0}".format(measurement_mode))
         if measurement_mode == main_gui.DisplayTypes.counts.value:
             logging.debug("setting data as counts")
@@ -141,7 +152,6 @@ class SpectrometerData(object):
 class SaveTopLevel(tk.Toplevel):
     def __init__(self, wavelength_data: list, light_data: list,
                  data_type: str, settings):
-        print("hello ")
         tk.Toplevel.__init__(self, master=None)
         # set basic attributes
         self.attributes('-topmost', 'true')
@@ -188,7 +198,9 @@ class SaveTopLevel(tk.Toplevel):
         # get gain settings
         gain = None
         for value, gain_setting in device_settings.GAIN_SETTING_MAP.items():
-            if gain_setting == settings.run_settings['gain']:
+            if gain_setting.value == settings.run_settings['gain']:
+                gain = value
+            elif value == settings.run_settings['gain']:  # horrible hack but should work
                 gain = value
 
         self.details_str = "gain: {0}, integration time: {1} ms\n{2}".format(gain,

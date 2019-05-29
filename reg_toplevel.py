@@ -70,20 +70,15 @@ class RegDebugger(tk.Toplevel):
         tk.Label(self, textvariable=self.reg_read_value).pack(side='top')
 
     def write_reg(self):
-        print("check")
         if not self.reg_number.get():
-            print("No register selected")
             return
-        print(self.reg_number.get(),  self.reg_value.get())
         self.device.usb_write("{0}|REG_WRITE|{1}|0x{2}".format(self.sensor_type.get(),
                                                                   REGISTERS[self.reg_number.get()],
                                                                   self.reg_value.get()))
 
     def read_reg_call(self):
-        print('reading reg: ', self.read_reg.get())
         self.device.usb_write("{0}|REG_READ|{1}".format(self.sensor_type.get(),
                                                            REGISTERS[self.read_reg.get()]))
         return_str = self.device.usb_read_data(encoding="string")
-        print(return_str)
         # print("Got back reg value: {:02X}".format(reg_value))
         self.reg_read_value.set(return_str[10:])
