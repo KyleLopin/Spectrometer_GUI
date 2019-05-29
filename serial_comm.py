@@ -26,6 +26,7 @@ class WiPySerial:
         self.gain = 1
         self.reading = False
         self.data_packet = None
+        self.saturation_error = False
 
     @staticmethod
     def auto_find_com_port():
@@ -74,30 +75,27 @@ class WiPySerial:
 
     def read_single_data_read(self, sensor_tag: str):
         self.reading = True
-
+        self.saturation_error = False
         while self.reading:
-            print('reading1: ', self.reading)
             dataline = self.device.readline()
             print('dataline: ', dataline)
-            print(b'%s START READ' % sensor_tag)
             # print ((b'%s START READ' % sensor_tag) in dataline))
             if (b'%s START READ' % sensor_tag) in dataline:
-                print("check")
                 self.data_packet = AS726XRead("AS7262")
             elif (b'%s RAW DATA:' % sensor_tag) in dataline:
                 raw_data = self.parse_data_str(dataline)
                 self.data_packet.add_raw_data(raw_data)
                 if self.check_if_saturated(raw_data):
-                    # TODO: put popup warning here
+                    self.saturation_error = True
+
                     print("ERROR, REREAD")
 
             elif (b'%s CAL DATA:' % sensor_tag) in dataline:
                 self.data_packet.add_cal_data(self.parse_data_str(dataline))
             elif b'integration cycles:' in dataline:
-                gain, _int = self.parse_int_n_gain(dataline)
+                _int, gain = self.parse_int_n_gain(dataline)
                 self.data_packet.add_gain_n_integration(gain, _int)
             elif b'END READ' in dataline:
-                print('returning', self.data_packet)
                 return self.data_packet
         print('reading1: ', self.reading)
 
@@ -108,14 +106,11 @@ class WiPySerial:
 
     @staticmethod
     def check_if_saturated(data_list):
-        print('max: ', max(data_list), data_list)
         return max(data_list) > 65000  # 16 bit adc
 
     @staticmethod
     def parse_int_n_gain(settings_str):
         num_str = settings_str.split(b'|')
-        print('parse: ', num_str)
-        print([num_str[i] for i in [1, 3]])
         return int(num_str[1]), float(num_str[3])
 
     def calibrate_as7262(self):
@@ -125,7 +120,6 @@ class WiPySerial:
         packets = self.read_all()
         for packet in packets:
             if b'RAW DATA: ' in packet:
-                print('got raw data: ', packet)
                 data_pts = re.split(b"[[\],]", packet)[1:-1]
                 raw_data = [int(i) for i in data_pts]
                 print(raw_data, max(raw_data))
@@ -152,6 +146,8 @@ class AS726XRead:
         self.calibrated_data = None
         self.integration_cycles = None
         self.gain = None
+        self.norm_data = None
+        self.time_stamp = None
 
     def add_gain_n_integration(self, gain=None, integration_cycles=None):
         if gain:
@@ -164,12 +160,21 @@ class AS726XRead:
 
     def add_cal_data(self, cal_data):
         self.calibrated_data = cal_data
+        self.norm_data = self.normalize_data(cal_data, self.integration_cycles)
 
     def print_data(self, with_header=False):
-        print("Sensor, Gain, int cycles")
-        print('{0}, {1}, {2}, Raw data, {3}, Calibrated data, {4}'.format(self.type, self.gain,
-              self.integration_cycles, ', '.join(str(x) for x in self.raw_data),
-              ', '.join(str(x) for x in self.calibrated_data)))
+        if with_header:
+            print("Sensor, Gain, int cycles")
+        return ('{0}, {1}, {2}, Raw data, {3}, '
+                'Calibrated data, {4}\n'.format(self.type, self.gain,
+                                              self.integration_cycles,
+                                              ', '.join(str(x) for x in self.raw_data),
+                                              ', '.join(str(x) for x in self.norm_data)))
+
+    @staticmethod
+    def normalize_data(spectral_data, int_time):
+        norm_data = [(x * 1000 / (int_time * 2.8)) for x in spectral_data]
+        return norm_data
 
 
 if __name__ == '__main__':
