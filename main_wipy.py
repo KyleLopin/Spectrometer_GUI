@@ -13,6 +13,7 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
+import os
 # local files
 import pyplot_embed
 import serial_comm
@@ -35,8 +36,20 @@ class AS726X_GUI_v1(tk.Tk):
         # print('plot: ', sensor, self.graph)
         self.graph.pack(side='left', fill=tk.BOTH, expand=True)
 
-        tk.Label(self, text="Leaf Number:").pack(side='top', pady=5)
         self.leave_number = 1
+        today = str(date.today())
+        print(type(today), today)
+        self.as7262_filename = today + "_as7262_reads.csv"
+        if os.path.isfile(self.as7262_filename):
+            print("see file======================")
+            with open(self.as7262_filename, 'r') as _file:
+                lines = _file.readlines()  # read last file
+                last_line = lines[-1]  # look at last line
+                # splice the last line to get the last leave number and increment
+                self.leave_number = int(last_line.split(',')[0].split(':')[1]) + 1
+
+        tk.Label(self, text="Leaf Number:").pack(side='top', pady=5)
+
         self.leave_number_spinbox = tk.Spinbox(self, from_=self.leave_number, to=100)
         self.leave_number_spinbox.pack(side='top', pady=5)
 
@@ -52,9 +65,7 @@ class AS726X_GUI_v1(tk.Tk):
                                              width=20, command=self.read_as7262_range)
         self.as7276_range_button.pack(side='top', padx=5, pady=20)
 
-        today = str(date.today())
-        print(type(today), today)
-        self.as7262_filename = today + "_as7262_reads.csv"
+
 
         indicator_frame = tk.Frame(self)
         indicator_frame.pack(side='bottom', padx=5, pady=20)
@@ -85,8 +96,9 @@ class AS726X_GUI_v1(tk.Tk):
             print("leave: ", self.leave_number_spinbox.get())
             _file.write("Leaf: {0}, ".format(self.leave_number_spinbox.get()))
             _file.write(data.print_data())
-            # print('time stamp: ', datetime.timestamp(datetime.now()))
-            # _file.write()
+            print('time stamp: ', datetime.now().strftime("%H:%M:%S"))
+            _file.write(", {0}, {1}\n".format(datetime.now().strftime("%H:%M:%S"),
+                                              self.description.get()))
 
     def read_as7262_range(self):
         data_range = self.device.read_as7262_read_range()

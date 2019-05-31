@@ -172,7 +172,7 @@ class AS726XRead:
         if with_header:
             print("Sensor, Gain, int cycles")
         return ('{0}, {1}, {2}, Raw data, {3}, '
-                'Calibrated data, {4}\n'.format(self.type, self.gain,
+                'Calibrated data, {4}'.format(self.type, self.gain,
                                               self.integration_cycles,
                                               ', '.join(str(x) for x in self.raw_data),
                                               ', '.join(str(x) for x in self.norm_data)))
