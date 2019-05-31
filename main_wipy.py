@@ -9,6 +9,7 @@ serial_comm communicates with the device. """
 # standard libraries
 import logging
 from datetime import date
+from datetime import datetime
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
@@ -34,22 +35,37 @@ class AS726X_GUI_v1(tk.Tk):
         # print('plot: ', sensor, self.graph)
         self.graph.pack(side='left', fill=tk.BOTH, expand=True)
 
+        tk.Label(self, text="Leaf Number:").pack(side='top', pady=5)
         self.leave_number = 1
         self.leave_number_spinbox = tk.Spinbox(self, from_=self.leave_number, to=100)
-        self.leave_number_spinbox.pack(side='top', pady=20)
+        self.leave_number_spinbox.pack(side='top', pady=5)
+
+        tk.Label(self, text="Description:").pack(side='top', pady=5)
+        self.description = tk.StringVar()
+        tk.Entry(self, textvariable=self.description).pack(side='top', pady=5)
 
         self.as7276_button = tk.Button(self, text="AS7262 read\n(small box)", width=20,
                                        command=self.read_as7262)
         # self.as7276_button.pack(side='top', padx=5, pady=20)
 
-        self.as7276_range_button = tk.Button(self, text="AS7262 read range\n(small box)", width=20,
-                                             command=self.read_as7262_range)
+        self.as7276_range_button = tk.Button(self, text="AS7262 read range\n(small box)",
+                                             width=20, command=self.read_as7262_range)
         self.as7276_range_button.pack(side='top', padx=5, pady=20)
 
         today = str(date.today())
         print(type(today), today)
         self.as7262_filename = today + "_as7262_reads.csv"
 
+        indicator_frame = tk.Frame(self)
+        indicator_frame.pack(side='bottom', padx=5, pady=20)
+        self.as7262_indicator = tk.Button(indicator_frame, text="Turn AS7262\nIndicator On",
+                                          command=self.toggle_as726x_indicator)
+        self.as7262_indicator.pack(side='left', padx=5, pady=20)
+
+        self.as7265x_indicator = tk.Button(indicator_frame, text="Turn Triad\nIndicator On",
+                                           command=self.toggle_as7265x_indicator)
+        self.as7265x_indicator.pack(side='left', padx=5, pady=20)
+        self.device.write("as7262, as7265x, lp55231 = init()")
 
     def read_as7262(self, save=True):
         all_data = self.device.read_as7262()
@@ -69,6 +85,8 @@ class AS726X_GUI_v1(tk.Tk):
             print("leave: ", self.leave_number_spinbox.get())
             _file.write("Leaf: {0}, ".format(self.leave_number_spinbox.get()))
             _file.write(data.print_data())
+            # print('time stamp: ', datetime.timestamp(datetime.now()))
+            # _file.write()
 
     def read_as7262_range(self):
         data_range = self.device.read_as7262_read_range()
@@ -91,6 +109,28 @@ class AS726X_GUI_v1(tk.Tk):
     @staticmethod
     def check_if_saturated(data_list):
         return max(data_list) > 65000  # 16 bit adc
+
+    def toggle_as726x_indicator(self):
+        print("toggle")
+        button_text = self.as7262_indicator['text']
+        print(button_text)
+        if button_text == "Turn AS7262\nIndicator On":
+            self.device.write("as7262.enable_indicator_led()")
+            self.as7262_indicator.config(text="Turn AS7262\nIndicator Off")
+        elif button_text == "Turn AS7262\nIndicator Off":
+            self.device.write("as7262.disable_indicator_led()")
+            self.as7262_indicator.config(text="Turn AS7262\nIndicator On")
+
+    def toggle_as7265x_indicator(self):
+        print("toggle")
+        button_text = self.as7265x_indicator['text']
+        print(button_text)
+        if button_text == "Turn Triad\nIndicator On":
+            self.device.write("as7265x.enable_indicator_led()")
+            self.as7265x_indicator.config(text="Turn Triad\nIndicator Off")
+        elif button_text == "Turn Triad\nIndicator Off":
+            self.device.write("as7265x.disable_indicator_led()")
+            self.as7265x_indicator.config(text="Turn Triad\nIndicator On")
 
 
 if __name__ == '__main__':

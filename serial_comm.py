@@ -53,13 +53,19 @@ class WiPySerial:
                     print("Port access error: ", error)
 
     def read_all(self):
-        data_packet = self.device.readall()
-        print(data_packet)
-        data_packets = data_packet.split(b'\r\n')
-        print(data_packets)
-        return data_packets
+        try:
+            data_packet = self.device.readall()
+            print(data_packet)
+            data_packets = data_packet.split(b'\r\n')
+            print(data_packets)
+            return data_packets
+        except:
+            print("Error Reading")
 
     def write(self, message):
+        if type(message) is str:
+            message = message.encode()
+        print('writing message: ', message)
         self.device.write(message+b'\r')
 
     def read_as7262(self):
