@@ -133,7 +133,7 @@ class SpectroPlotterBasic(tk.Frame):
             self.lines[label].set_xdata(x_data)
             self.lines[label].set_ydata(y_data)
         else:
-            newline, = self.axis.plot(x_data, y_data, label="{0} ms".format(2.8*label))
+            newline, = self.axis.plot(x_data, y_data, 'o', label="{0} ms".format(2.8*label))
             self.lines[label] = newline
         plt.legend(title='Integration Time')
         self.axis.relim()

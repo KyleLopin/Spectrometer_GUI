@@ -23,6 +23,12 @@ __author__ = 'Kyle Vitautas Lopin'
 
 AS7262_WAVELENGTHS = [450, 500, 550, 570, 600, 650]
 AS7263_WAVELENGTHS = [610, 680, 730, 760, 810, 860]
+AS7265X_WAVELENGTHS = [610, 680, 730, 760, 810, 860,
+                       560, 585, 645, 705, 900, 940,
+                       410, 435, 460, 485, 510, 535]
+
+ONBOARD_LEDS = ["White LED", "IR LED", "UV LED"]
+LP55231_LEDS = [400, 410, 455, 465, 0, 480, 630, 890, 940]
 
 class AS726X_GUI_v1(tk.Tk):
 
@@ -40,6 +46,7 @@ class AS726X_GUI_v1(tk.Tk):
         today = str(date.today())
         print(type(today), today)
         self.as7262_filename = today + "_as7262_reads.csv"
+        self.as7265x_filename = today + "_as7265x_reads.csv"
         if os.path.isfile(self.as7262_filename):
             print("see file======================")
             with open(self.as7262_filename, 'r') as _file:
@@ -65,7 +72,9 @@ class AS726X_GUI_v1(tk.Tk):
                                              width=20, command=self.read_as7262_range)
         self.as7276_range_button.pack(side='top', padx=5, pady=20)
 
-
+        self.as7265x_int_led_range = tk.Button(self, text="AS7265X read range\n(small box)",
+                                               width=20, command=self.read_as7265x)
+        self.as7265x_int_led_range.pack(side='top', padx=5, pady=20)
 
         indicator_frame = tk.Frame(self)
         indicator_frame.pack(side='bottom', padx=5, pady=20)
@@ -77,6 +86,9 @@ class AS726X_GUI_v1(tk.Tk):
                                            command=self.toggle_as7265x_indicator)
         self.as7265x_indicator.pack(side='left', padx=5, pady=20)
         self.device.write("as7262, as7265x, lp55231 = init()")
+        self.led = 0
+        self.lp55231_led = 0
+        self.led_str = None
 
     def read_as7262(self, save=True):
         all_data = self.device.read_as7262()
@@ -85,12 +97,66 @@ class AS726X_GUI_v1(tk.Tk):
         if save:
             self.save_data(all_data, "AS7262")
 
+    def read_as7265x(self):
+        # all_data, led_str = self.device.read_range_as7265x_leds()
+        if self.led is not None:
+            all_data = self.device.read_range_as7265x(None, self.led+1)
+            self.led_str = ONBOARD_LEDS[self.led]
+            if self.led == 2:
+                self.led = None
+                self.lp55231_led = 0
+            else:
+                self.led += 1
+        else:
+            all_data = self.device.read_range_as7265x(self.lp55231_led+1, None)
+            self.led_str = LP55231_LEDS[self.lp55231_led]
+            if self.lp55231_led == 9:
+                self.led = 0
+                self.lp55231_led = None
+                self.leave_number += 1
+                self.leave_number_spinbox.delete(0, "end")  # delete value in
+                self.leave_number_spinbox.insert(0, self.leave_number)
+            else:
+                self.lp55231_led += 1
+        print('===========================what?????????????????')
+        print(all_data)
+        for key in serial_comm.INT_TIMES_AS7265X:
+            data = all_data[key]
+            print(key, data, data.raw_data)
+            if self.check_if_saturated(data.raw_data):
+                messagebox.showerror("Saturation Error",
+                                     "Saturated data at {0} ms integration time".format(2.8 * key))
+            print('kk: ', data)
+            self.graph.update_data(AS7265X_WAVELENGTHS, data.norm_data, key)
+            self.save_as7265x_data(data, "AS7265X", self.led_str)
+
+
+
+    def save_as7265x_data(self, data, type, light_str):
+        print('end4: ', data, light_str)
+        print('=================')
+        print('saving data: ', data.print_data())
+        if type == "AS7262":
+            filename = self.as7262_filename
+        elif type == "AS7265X":
+            filename = self.as7265x_filename
+
+        with open(filename, 'a') as _file:
+            print("leave: ", self.leave_number_spinbox.get())
+            _file.write("Leaf: {0}, ".format(self.leave_number_spinbox.get()))
+            _file.write(data.print_data())
+            print('time stamp: ', datetime.now().strftime("%H:%M:%S"))
+            _file.write(", {0}, {1}, {2}\n".format(datetime.now().strftime("%H:%M:%S"),
+                                                   self.description.get(), light_str))
+
     def save_data(self, data, type):
         print('end4: ', data)
         print('=================')
         print('saving data: ', data.print_data())
         if type == "AS7262":
             filename = self.as7262_filename
+        elif type == "AS7265X":
+            filename = self.as7265x_filename
 
         with open(filename, 'a') as _file:
             print("leave: ", self.leave_number_spinbox.get())

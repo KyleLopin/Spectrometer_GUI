@@ -19,6 +19,10 @@ STOP_BITS = serial.STOPBITS_ONE
 PARITY = serial.PARITY_NONE
 BYTE_SIZE = serial.EIGHTBITS
 
+ONBOARD_LEDS = ["White LED", "IR LED", "UV LED"]
+LP55231_LEDS = [400, 410, 455, 465, 0, 480, 630, 890, 940]
+INT_TIMES_AS7265X = [5, 10, 20, 40, 60, 80, 120, 160, 200, 250]
+
 class WiPySerial:
     def __init__(self):
         self.device = self.auto_find_com_port()
@@ -77,6 +81,26 @@ class WiPySerial:
         for int_time in [50, 100, 150, 200, 250]:
             self.write(b"AS7262_read(%d)" % int_time)
             data[int_time] = self.read_single_data_read(b"AS7262")
+        return data
+
+    def read_range_as7265x_leds(self):
+        for led in [0, 1, 2]:
+            data = self.read_range_as7265x(None, led)
+            print('=================== YEILDING   ===================')
+            yield data, ONBOARD_LEDS[led]
+        for i in range(9):
+            data = self.read_range_as7265x(list(i), None)
+            yield data, "{0} nm".format(LP55231_LEDS[i])
+
+    def read_range_as7265x(self, lp55231_channel=None, on_board_led=None):
+        data = {}
+        for int_time in [5, 10, 20, 40, 60, 80, 120, 160, 200, 250]:
+            msg = "AS7265X_Read({0}, {1}, {2})".format(int_time,
+                                                       lp55231_channel,
+                                                       on_board_led)
+            print("writing: ", msg)
+            self.write(msg)
+            data[int_time] = self.read_single_data_read(b"AS7265X")
         return data
 
     def read_single_data_read(self, sensor_tag: str):
