@@ -72,6 +72,23 @@ class AS726X_GUI_v1(tk.Tk):
                                              width=20, command=self.read_as7262_range)
         self.as7276_range_button.pack(side='top', padx=5, pady=20)
 
+        self.onboard_led = tk.StringVar(self)
+        onboard_choices = ["None", "White LED", "IR LED", "UV LED"]
+        self.onboard_led.set("None")
+        self.onboard_led_option = tk.OptionMenu(self, self.onboard_led,
+                                             *onboard_choices)
+        self.onboard_led_option.pack(side='top', padx=5, pady=5)
+
+        self.lp55231_led = tk.StringVar(self)
+        lp55231_choices = [None]
+        for LED in LP55231_LEDS:
+            lp55231_choices.append("{0} nm".format(LED))
+        self.lp55231_led.set("None")
+        self.lp55231_option = tk.OptionMenu(self, self.lp55231_led,
+                                             *lp55231_choices)
+        self.lp55231_option.pack(side='top', padx=5, pady=5)
+
+
         self.as7265x_int_led_range = tk.Button(self, text="AS7265X read range\n(small box)",
                                                width=20, command=self.read_as7265x)
         self.as7265x_int_led_range.pack(side='top', padx=5, pady=20)
@@ -85,9 +102,9 @@ class AS726X_GUI_v1(tk.Tk):
         self.as7265x_indicator = tk.Button(indicator_frame, text="Turn Triad\nIndicator On",
                                            command=self.toggle_as7265x_indicator)
         self.as7265x_indicator.pack(side='left', padx=5, pady=20)
-        self.device.write("as7262, as7265x, lp55231 = init()")
-        self.led = 0
-        self.lp55231_led = 0
+        # self.device.write("as7262, as7265x, lp55231 = init()")
+        # self.led = 0
+        # self.lp55231_led = 0
         self.led_str = None
 
     def read_as7262(self, save=True):
@@ -98,27 +115,33 @@ class AS726X_GUI_v1(tk.Tk):
             self.save_data(all_data, "AS7262")
 
     def read_as7265x(self):
+        onchip_led = self.onboard_led.get()
+        lp55231_channel = self.lp55231_led.get()
+        if onchip_led != "None":
+            onchip_led = ONBOARD_LEDS.index(onchip_led)
+        if lp55231_channel != "None":
+            lp55231_channel = LP55231_LEDS.index(lp55231_channel)
+        all_data = self.device.read_range_as7265x(onchip_led, lp55231_channel)
         # all_data, led_str = self.device.read_range_as7265x_leds()
-        if self.led is not None:
-            all_data = self.device.read_range_as7265x(None, self.led+1)
-            self.led_str = ONBOARD_LEDS[self.led]
-            if self.led == 2:
-                self.led = None
-                self.lp55231_led = 0
-            else:
-                self.led += 1
-        else:
-            all_data = self.device.read_range_as7265x(self.lp55231_led+1, None)
-            self.led_str = LP55231_LEDS[self.lp55231_led]
-            if self.lp55231_led == 9:
-                self.led = 0
-                self.lp55231_led = None
-                self.leave_number += 1
-                self.leave_number_spinbox.delete(0, "end")  # delete value in
-                self.leave_number_spinbox.insert(0, self.leave_number)
-            else:
-                self.lp55231_led += 1
-        print('===========================what?????????????????')
+        # if self.led is not None:
+        #     all_data = self.device.read_range_as7265x(None, self.led+1)
+        #     self.led_str = ONBOARD_LEDS[self.led]
+        #     if self.led == 2:
+        #         self.led = None
+        #         self.lp55231_led = 0
+        #     else:
+        #         self.led += 1
+        # else:
+        #     all_data = self.device.read_range_as7265x(self.lp55231_led+1, None)
+        #     self.led_str = LP55231_LEDS[self.lp55231_led]
+        #     if self.lp55231_led == 8:
+        #         self.led = 0
+        #         self.lp55231_led = None
+        #         self.leave_number += 1
+        #         self.leave_number_spinbox.delete(0, "end")  # delete value in
+        #         self.leave_number_spinbox.insert(0, self.leave_number)
+        #     else:
+        #         self.lp55231_led += 1
         print(all_data)
         for key in serial_comm.INT_TIMES_AS7265X:
             data = all_data[key]
