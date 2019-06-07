@@ -7,6 +7,7 @@ graph embedded into a tk.Frame to display the data and
 serial_comm communicates with the device. """
 
 # standard libraries
+from collections import OrderedDict
 import logging
 from datetime import date
 from datetime import datetime
@@ -28,7 +29,11 @@ AS7265X_WAVELENGTHS = [610, 680, 730, 760, 810, 860,
                        410, 435, 460, 485, 510, 535]
 
 ONBOARD_LEDS = ["White LED", "IR LED", "UV LED"]
-LP55231_LEDS = [400, 410, 455, 465, 0, 480, 630, 890, 940]
+LP55231_LEDS_RIGHT = [390, 395, 400, 405, 410, 425, 525, 890, 000]
+LP55231_LEDS_LEFT = [455, 475, 480, 465, 470, 505, 630, 000, 940]
+
+LIGHTS = OrderedDict()
+
 
 class AS726X_GUI_v1(tk.Tk):
 

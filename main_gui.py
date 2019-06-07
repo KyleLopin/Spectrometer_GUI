@@ -19,6 +19,7 @@ import reg_toplevel
 import spectro_frame
 
 
+
 __author__ = 'Kyle Vitautas Lopin'
 
 # if getattr(sys, 'frozen', False):
