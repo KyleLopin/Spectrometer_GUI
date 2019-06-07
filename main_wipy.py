@@ -102,7 +102,8 @@ class AS726X_GUI_v1(tk.Tk):
         self.as7265x_indicator = tk.Button(indicator_frame, text="Turn Triad\nIndicator On",
                                            command=self.toggle_as7265x_indicator)
         self.as7265x_indicator.pack(side='left', padx=5, pady=20)
-        # self.device.write("as7262, as7265x, lp55231 = init()")
+        # self.device.write("as7262 = init()")
+        self.device.write("as7265x, lp55231 = init()")
         # self.led = 0
         # self.lp55231_led = 0
         self.led_str = None
@@ -118,10 +119,10 @@ class AS726X_GUI_v1(tk.Tk):
         onchip_led = self.onboard_led.get()
         lp55231_channel = self.lp55231_led.get()
         if onchip_led != "None":
-            onchip_led = ONBOARD_LEDS.index(onchip_led)
+            onchip_led = ONBOARD_LEDS.index(onchip_led) + 1
         if lp55231_channel != "None":
-            lp55231_channel = LP55231_LEDS.index(lp55231_channel)
-        all_data = self.device.read_range_as7265x(onchip_led, lp55231_channel)
+            lp55231_channel = LP55231_LEDS.index(int(lp55231_channel.split(' ')[0])) + 1
+        all_data = self.device.read_range_as7265x(lp55231_channel, onchip_led)
         # all_data, led_str = self.device.read_range_as7265x_leds()
         # if self.led is not None:
         #     all_data = self.device.read_range_as7265x(None, self.led+1)
@@ -152,8 +153,7 @@ class AS726X_GUI_v1(tk.Tk):
             print('kk: ', data)
             self.graph.update_data(AS7265X_WAVELENGTHS, data.norm_data, key)
             self.save_as7265x_data(data, "AS7265X", self.led_str)
-
-
+            print("Light source: {0}".format(self.led_str))
 
     def save_as7265x_data(self, data, type, light_str):
         print('end4: ', data, light_str)
@@ -237,5 +237,5 @@ class AS726X_GUI_v1(tk.Tk):
 if __name__ == '__main__':
     app = AS726X_GUI_v1()
     app.title("Chlorophyll testing GUI v1")
-    app.geometry("900x750")
+    app.geometry("900x700")
     app.mainloop()

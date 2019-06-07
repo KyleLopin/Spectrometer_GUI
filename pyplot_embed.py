@@ -121,7 +121,7 @@ class SpectroPlotterBasic(tk.Frame):
 
         # self.axis.set_xlim([600, 900])
         self.axis.set_xlabel("wavelength (nm)")
-        self.axis.set_xlim([400, 900])
+        self.axis.set_xlim([400, 950])
 
         # self.axis.set_ylim([0, 50000)
         self.axis.set_ylabel(r'$\mu$W/cm$^2$/s')
