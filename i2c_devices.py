@@ -9,8 +9,11 @@ __author__ = "Kyle Vitatus Lopin"
 LP55231_START_LED_PWM_REG_ADDR = 0x16
 LP55231_START_LED_CURRENT_REG_ADDR = 0x26
 
+LP55231_LEFT_ADDR = 0x33
+LP55231_RIGHT_ADDR = 0x34
 
-class Light():
+
+class Light:
     def __init__(self, type, i2c_adress=None, channel=None, device=None):
         self.type = type
         if type == "AS726X":
@@ -30,3 +33,10 @@ class Light():
                                                           LP55231_START_LED_PWM_REG_ADDR),
                                                       0xFF)
             print(msg)
+
+    def get_single_led_str(self):
+        if self.type == "AS726X":
+            # print("([{0}], [])".format(self.device))
+            return [self.device], []
+        elif self.type == "LP55231":
+            return [], [self.channel]

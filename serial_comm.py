@@ -23,6 +23,7 @@ BYTE_SIZE = serial.EIGHTBITS
 ONBOARD_LEDS = ["White LED", "IR LED", "UV LED"]
 LP55231_LEDS = [400, 410, 455, 465, 0, 480, 630, 890, 940]
 INT_TIMES_AS7265X = [5, 10, 20, 40, 60, 80, 120, 160, 200, 250]
+# INT_TIMES_AS7265X = [50, 100]
 
 class WiPySerial:
     def __init__(self):
@@ -98,7 +99,8 @@ class WiPySerial:
 
     def read_range_as7265x(self, lp55231_channel=None, on_board_led=None):
         data = {}
-        for int_time in [5, 10, 20, 40, 60, 80, 120, 160, 200, 250]:
+        for int_time in INT_TIMES_AS7265X:
+
             msg = "AS7265X_Read({0}, {1}, {2})".format(int_time,
                                                        lp55231_channel,
                                                        on_board_led)

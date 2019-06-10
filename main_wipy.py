@@ -16,6 +16,7 @@ from tkinter import messagebox
 from tkinter import ttk
 import os
 # local files
+import light_sources
 import pyplot_embed
 import serial_comm
 
@@ -93,6 +94,13 @@ class AS726X_GUI_v1(tk.Tk):
         #                                      *lp55231_choices)
         # self.lp55231_option.pack(side='top', padx=5, pady=5)
 
+        tk.Label(self, text="LED Source:").pack(side='top', padx=5, pady=5)
+        self.lights = light_sources.make_light_sources()
+        print(self.lights)
+
+        self.led_choices = tk.StringVar(self)
+        self.led_choices.set("None")
+        tk.OptionMenu(self, self.led_choices, *self.lights).pack(side='top', padx=5, pady=5)
 
 
         self.as7265x_int_led_range = tk.Button(self, text="AS7265X read range\n(small box)",
@@ -111,7 +119,7 @@ class AS726X_GUI_v1(tk.Tk):
         # self.device.write("as7262 = init()")
         print(self.device.is_connected())
         if self.device.is_connected():  # for debugging device may not be attached
-            self.device.write("as7265x, lp55231 = init()")
+            self.device.write("as7265x, lp55231_1, lp55231_2 = init()")
         # self.led = 0
         # self.lp55231_led = 0
         self.led_str = None
@@ -124,33 +132,13 @@ class AS726X_GUI_v1(tk.Tk):
             self.save_data(all_data, "AS7262")
 
     def read_as7265x(self):
-        onchip_led = self.onboard_led.get()
-        lp55231_channel = self.lp55231_led.get()
-        if onchip_led != "None":
-            onchip_led = ONBOARD_LEDS.index(onchip_led) + 1
-        if lp55231_channel != "None":
-            lp55231_channel = LP55231_LEDS.index(int(lp55231_channel.split(' ')[0])) + 1
-        all_data = self.device.read_range_as7265x(lp55231_channel, onchip_led)
-        # all_data, led_str = self.device.read_range_as7265x_leds()
-        # if self.led is not None:
-        #     all_data = self.device.read_range_as7265x(None, self.led+1)
-        #     self.led_str = ONBOARD_LEDS[self.led]
-        #     if self.led == 2:
-        #         self.led = None
-        #         self.lp55231_led = 0
-        #     else:
-        #         self.led += 1
-        # else:
-        #     all_data = self.device.read_range_as7265x(self.lp55231_led+1, None)
-        #     self.led_str = LP55231_LEDS[self.lp55231_led]
-        #     if self.lp55231_led == 8:
-        #         self.led = 0
-        #         self.lp55231_led = None
-        #         self.leave_number += 1
-        #         self.leave_number_spinbox.delete(0, "end")  # delete value in
-        #         self.leave_number_spinbox.insert(0, self.leave_number)
-        #     else:
-        #         self.lp55231_led += 1
+        _led = self.led_choices.get()
+        print('selected led: ', self.lights[_led])
+        print(self.lights[_led].get_single_led_str())
+
+        _onboard_leds, _lp55231_leds = self.lights[_led].get_single_led_str()
+        all_data = self.device.read_range_as7265x(on_board_led=_onboard_leds, lp55231_channel=_lp55231_leds)
+
         print(all_data)
         for key in serial_comm.INT_TIMES_AS7265X:
             data = all_data[key]
