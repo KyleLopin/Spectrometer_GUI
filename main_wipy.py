@@ -77,21 +77,22 @@ class AS726X_GUI_v1(tk.Tk):
                                              width=20, command=self.read_as7262_range)
         self.as7276_range_button.pack(side='top', padx=5, pady=20)
 
-        self.onboard_led = tk.StringVar(self)
-        onboard_choices = ["None", "White LED", "IR LED", "UV LED"]
-        self.onboard_led.set("None")
-        self.onboard_led_option = tk.OptionMenu(self, self.onboard_led,
-                                             *onboard_choices)
-        self.onboard_led_option.pack(side='top', padx=5, pady=5)
+        # self.onboard_led = tk.StringVar(self)
+        # onboard_choices = ["None", "White LED", "IR LED", "UV LED"]
+        # self.onboard_led.set("None")
+        # self.onboard_led_option = tk.OptionMenu(self, self.onboard_led,
+        #                                      *onboard_choices)
+        # self.onboard_led_option.pack(side='top', padx=5, pady=5)
+        #
+        # self.lp55231_led = tk.StringVar(self)
+        # lp55231_choices = [None]
+        # for LED in LP55231_LEDS:
+        #     lp55231_choices.append("{0} nm".format(LED))
+        # self.lp55231_led.set("None")
+        # self.lp55231_option = tk.OptionMenu(self, self.lp55231_led,
+        #                                      *lp55231_choices)
+        # self.lp55231_option.pack(side='top', padx=5, pady=5)
 
-        self.lp55231_led = tk.StringVar(self)
-        lp55231_choices = [None]
-        for LED in LP55231_LEDS:
-            lp55231_choices.append("{0} nm".format(LED))
-        self.lp55231_led.set("None")
-        self.lp55231_option = tk.OptionMenu(self, self.lp55231_led,
-                                             *lp55231_choices)
-        self.lp55231_option.pack(side='top', padx=5, pady=5)
 
 
         self.as7265x_int_led_range = tk.Button(self, text="AS7265X read range\n(small box)",
@@ -108,7 +109,9 @@ class AS726X_GUI_v1(tk.Tk):
                                            command=self.toggle_as7265x_indicator)
         self.as7265x_indicator.pack(side='left', padx=5, pady=20)
         # self.device.write("as7262 = init()")
-        self.device.write("as7265x, lp55231 = init()")
+        print(self.device.is_connected())
+        if self.device.is_connected():  # for debugging device may not be attached
+            self.device.write("as7265x, lp55231 = init()")
         # self.led = 0
         # self.lp55231_led = 0
         self.led_str = None

@@ -14,6 +14,7 @@ import serial.tools.list_ports
 DESCRIPTOR_NAME_WIN1 = "USB Serial Port"
 DESCRIPTOR_NAME_WIN2 = "USB Serial Device"
 DESCRIPTOR_NAME_MAC = "FT230X Basic UART"
+DESCRIPTOR_NAME_MAC = "Expansion3"
 BAUD_RATE = 115200
 STOP_BITS = serial.STOPBITS_ONE
 PARITY = serial.PARITY_NONE
@@ -55,6 +56,9 @@ class WiPySerial:
                 except Exception as error:  # didn't work so try other ports
 
                     print("Port access error: ", error)
+
+    def is_connected(self):
+        return self.device
 
     def read_all(self):
         try:

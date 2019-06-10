@@ -129,7 +129,9 @@ class SpectroPlotterBasic(tk.Frame):
         self.lines = {}
 
     def update_data(self, x_data, y_data, label):
+
         if label in self.lines:
+            print("updating data")
             self.lines[label].set_xdata(x_data)
             self.lines[label].set_ydata(y_data)
         else:
