@@ -35,6 +35,9 @@ LP55231_LEDS_LEFT = [455, 475, 480, 465, 470, 505, 630, 000, 940]
 
 LIGHTS = OrderedDict()
 
+USE_SINGLE_LED = 0
+USE_MULTIPLE_LEDS = 1
+
 
 class AS726X_GUI_v1(tk.Tk):
 
@@ -61,14 +64,14 @@ class AS726X_GUI_v1(tk.Tk):
                 # splice the last line to get the last leave number and increment
                 self.leave_number = int(last_line.split(',')[0].split(':')[1]) + 1
 
-        tk.Label(self, text="Leaf Number:").pack(side='top', pady=5)
+        tk.Label(self, text="Leaf Number:").pack(side='top', pady=3)
 
         self.leave_number_spinbox = tk.Spinbox(self, from_=self.leave_number, to=100)
-        self.leave_number_spinbox.pack(side='top', pady=5)
+        self.leave_number_spinbox.pack(side='top', pady=3)
 
-        tk.Label(self, text="Description:").pack(side='top', pady=5)
+        tk.Label(self, text="Description:").pack(side='top', pady=3)
         self.description = tk.StringVar()
-        tk.Entry(self, textvariable=self.description).pack(side='top', pady=5)
+        tk.Entry(self, textvariable=self.description).pack(side='top', pady=3)
 
         self.as7276_button = tk.Button(self, text="AS7262 read\n(small box)", width=20,
                                        command=self.read_as7262)
@@ -76,31 +79,24 @@ class AS726X_GUI_v1(tk.Tk):
 
         self.as7276_range_button = tk.Button(self, text="AS7262 read range\n(small box)",
                                              width=20, command=self.read_as7262_range)
-        self.as7276_range_button.pack(side='top', padx=5, pady=20)
+        self.as7276_range_button.pack(side='top', padx=3, pady=5)
 
-        # self.onboard_led = tk.StringVar(self)
-        # onboard_choices = ["None", "White LED", "IR LED", "UV LED"]
-        # self.onboard_led.set("None")
-        # self.onboard_led_option = tk.OptionMenu(self, self.onboard_led,
-        #                                      *onboard_choices)
-        # self.onboard_led_option.pack(side='top', padx=5, pady=5)
-        #
-        # self.lp55231_led = tk.StringVar(self)
-        # lp55231_choices = [None]
-        # for LED in LP55231_LEDS:
-        #     lp55231_choices.append("{0} nm".format(LED))
-        # self.lp55231_led.set("None")
-        # self.lp55231_option = tk.OptionMenu(self, self.lp55231_led,
-        #                                      *lp55231_choices)
-        # self.lp55231_option.pack(side='top', padx=5, pady=5)
+        self.use_multiple_leds = tk.IntVar()
+        self.use_multiple_leds.set(USE_SINGLE_LED)
+        tk.Radiobutton(self, text="Use single LED",
+                       variable=self.use_multiple_leds,
+                       value=USE_SINGLE_LED,
+                       command=self.toggle_multi_leds).pack(side='top', padx=5, pady=4)
+        tk.Radiobutton(self, text="Use multiple LEDs",
+                       variable=self.use_multiple_leds,
+                       value=USE_MULTIPLE_LEDS,
+                       command=self.toggle_multi_leds).pack(side='top', padx=5, pady=4)
 
-        tk.Label(self, text="LED Source:").pack(side='top', padx=5, pady=5)
-        self.lights = light_sources.make_light_sources()
-        print(self.lights)
+        self.led_placeholder = tk.Frame(self)
+        self.led_placeholder.pack(side='top')
 
-        self.led_choices = tk.StringVar(self)
-        self.led_choices.set("None")
-        tk.OptionMenu(self, self.led_choices, *self.lights).pack(side='top', padx=5, pady=5)
+        self.led_choice = light_sources.SingleLEDFrame(self.led_placeholder)
+        self.led_choice.pack(side='top')
 
 
         self.as7265x_int_led_range = tk.Button(self, text="AS7265X read range\n(small box)",
@@ -124,6 +120,14 @@ class AS726X_GUI_v1(tk.Tk):
         # self.lp55231_led = 0
         self.led_str = None
 
+    def toggle_multi_leds(self):
+        print('toggle led = ', self.use_multiple_leds.get())
+        if self.use_multiple_leds.get() == USE_MULTIPLE_LEDS:
+            # a single LED frame was already used so change it
+            self.led_choice.destroy()
+            self.led_choice = light_sources.MultiLEDFrame(self.led_placeholder)
+            self.led_choice.pack(side='top')
+
     def read_as7262(self, save=True):
         all_data = self.device.read_as7262()
         print('end: ', all_data)
@@ -132,12 +136,18 @@ class AS726X_GUI_v1(tk.Tk):
             self.save_data(all_data, "AS7262")
 
     def read_as7265x(self):
-        _led = self.led_choices.get()
-        print('selected led: ', self.lights[_led])
-        print(self.lights[_led].get_single_led_str())
+        # _led_str, _light = self.led_choice.get()
+        # print('selected led: ', _led_str, )
+        # print(_light)
+        #
+        # _onboard_leds, _lp55231_leds = _light.get_single_led_str()
+        # print(_onboard_leds, _lp55231_leds)
+        # all_data = self.device.read_range_as7265x(on_board_led=_onboard_leds,
+        #                                           lp55231_channel=_lp55231_leds)
+        _led_str, _onboard_leds, _lp55231_leds = self.led_choice.get()
+        all_data = self.device.read_range_as7265x(on_board_led=_onboard_leds,
+                                                  lp55231_channel=_lp55231_leds)
 
-        _onboard_leds, _lp55231_leds = self.lights[_led].get_single_led_str()
-        all_data = self.device.read_range_as7265x(on_board_led=_onboard_leds, lp55231_channel=_lp55231_leds)
 
         print(all_data)
         for key in serial_comm.INT_TIMES_AS7265X:
