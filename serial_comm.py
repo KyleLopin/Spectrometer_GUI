@@ -23,16 +23,17 @@ BYTE_SIZE = serial.EIGHTBITS
 ONBOARD_LEDS = ["White LED", "IR LED", "UV LED"]
 LP55231_LEDS = [400, 410, 455, 465, 0, 480, 630, 890, 940]
 INT_TIMES_AS7265X = [5, 10, 20, 40, 60, 80, 120, 160, 200, 250]
-# INT_TIMES_AS7265X = [50, 100]
+INT_TIMES_AS7265X = [50, 100]
 
 class WiPySerial:
-    def __init__(self):
+    def __init__(self, sort_index=None):
         self.device = self.auto_find_com_port()
         self.read_all()
         self.gain = 1
         self.reading = False
         self.data_packet = None
         self.saturation_error = False
+        self.sort_index = sort_index
 
     @staticmethod
     def auto_find_com_port():
@@ -88,14 +89,14 @@ class WiPySerial:
             data[int_time] = self.read_single_data_read(b"AS7262")
         return data
 
-    def read_range_as7265x_leds(self):
-        for led in [0, 1, 2]:
-            data = self.read_range_as7265x(None, led)
-            print('=================== YEILDING   ===================')
-            yield data, ONBOARD_LEDS[led]
-        for i in range(9):
-            data = self.read_range_as7265x(list(i), None)
-            yield data, "{0} nm".format(LP55231_LEDS[i])
+    # def read_range_as7265x_leds(self):
+    #     for led in [0, 1, 2]:
+    #         data = self.read_range_as7265x(None, led)
+    #         print('=================== YEILDING   ===================')
+    #         yield data, ONBOARD_LEDS[led]
+    #     for i in range(9):
+    #         data = self.read_range_as7265x(list(i), None)
+    #         yield data, "{0} nm".format(LP55231_LEDS[i])
 
     def read_range_as7265x(self, lp55231_channel=None, on_board_led=None):
         data = {}
@@ -117,7 +118,7 @@ class WiPySerial:
             print('dataline: ', dataline)
             # print ((b'%s START READ' % sensor_tag) in dataline))
             if (b'%s START READ' % sensor_tag) in dataline:
-                self.data_packet = AS726XRead("AS7262")
+                self.data_packet = AS726XRead("AS7265X", self.sort_index)
             elif (b'%s RAW DATA:' % sensor_tag) in dataline:
                 raw_data = self.parse_data_str(dataline)
                 self.data_packet.add_raw_data(raw_data)
@@ -176,14 +177,15 @@ class WiPySerial:
 
 
 class AS726XRead:
-    def __init__(self, type: str):
-        self.type = type
+    def __init__(self, _type: str, sort_index: list):
+        self.type = _type
         self.raw_data = None
         self.calibrated_data = None
         self.integration_cycles = None
         self.gain = None
         self.norm_data = None
         self.time_stamp = None
+        self.sort_index = sort_index
 
     def add_gain_n_integration(self, gain=None, integration_cycles=None):
         if gain:
@@ -192,10 +194,21 @@ class AS726XRead:
             self.integration_cycles = integration_cycles
 
     def add_raw_data(self, raw_data):
-        self.raw_data = raw_data
+        if self.sort_index:
+            print('sorting')
+            self.raw_data = [raw_data[i] for i in self.sort_index]
+        else:
+            self.raw_data = raw_data
+        print('sorting data: ', raw_data)
+        print(self.raw_data)
 
     def add_cal_data(self, cal_data):
-        self.calibrated_data = cal_data
+        if self.sort_index:
+            self.calibrated_data = [cal_data[i] for i in self.sort_index]
+        else:
+            self.calibrated_data = cal_data
+
+
         self.norm_data = self.normalize_data(cal_data, self.integration_cycles)
 
     def print_data(self, with_header=False):

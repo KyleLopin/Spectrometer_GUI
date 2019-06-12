@@ -29,6 +29,19 @@ AS7265X_WAVELENGTHS = [610, 680, 730, 760, 810, 860,
                        560, 585, 645, 705, 900, 940,
                        410, 435, 460, 485, 510, 535]
 
+# sort the wavelenghts of AS7265x
+AS7265X_SORT_INDEX = sorted(range(len(AS7265X_WAVELENGTHS)),
+                            key=AS7265X_WAVELENGTHS.__getitem__)
+print(AS7265X_SORT_INDEX)
+
+
+def sort_data_as7265x(data_list):
+    return [data_list[i] for i in AS7265X_SORT_INDEX]
+
+
+AS7265X_SORTED_WAVELENGTHS = sort_data_as7265x(AS7265X_WAVELENGTHS)
+print(AS7265X_SORTED_WAVELENGTHS)
+
 ONBOARD_LEDS = ["White LED", "IR LED", "UV LED"]
 LP55231_LEDS_RIGHT = [390, 395, 400, 405, 410, 425, 525, 890, 000]
 LP55231_LEDS_LEFT = [455, 475, 480, 465, 470, 505, 630, 000, 940]
@@ -45,7 +58,7 @@ class AS726X_GUI_v1(tk.Tk):
         tk.Tk.__init__(self, parent)
         logging.basicConfig(format='%(asctime)s %(message)s',
                             datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
-        self.device = serial_comm.WiPySerial()
+        self.device = serial_comm.WiPySerial(AS7265X_SORT_INDEX)
         # make the graph frame, the parent class is a tk.Frame
         self.graph = pyplot_embed.SpectroPlotterBasic(self)
         # print('plot: ', sensor, self.graph)
@@ -56,13 +69,14 @@ class AS726X_GUI_v1(tk.Tk):
         print(type(today), today)
         self.as7262_filename = today + "_as7262_reads.csv"
         self.as7265x_filename = today + "_as7265x_reads.csv"
-        if os.path.isfile(self.as7262_filename):
-            print("see file======================")
-            with open(self.as7262_filename, 'r') as _file:
-                lines = _file.readlines()  # read last file
-                last_line = lines[-1]  # look at last line
+        # if os.path.isfile(self.as7262_filename):
+        #     print("see file======================")
+        #     with open(self.as7262_filename, 'r') as _file:
+        #         lines = _file.readlines()  # read last file
+        #         last_line = lines[-1]  # look at last line
                 # splice the last line to get the last leave number and increment
-                self.leave_number = int(last_line.split(',')[0].split(':')[1]) + 1
+                # self.leave_number = int(last_line.split(',')[0].split(':')[1]) + 1
+
 
         tk.Label(self, text="Leaf Number:").pack(side='top', pady=3)
 
@@ -98,7 +112,6 @@ class AS726X_GUI_v1(tk.Tk):
         self.led_choice = light_sources.SingleLEDFrame(self.led_placeholder)
         self.led_choice.pack(side='top')
 
-
         self.as7265x_int_led_range = tk.Button(self, text="AS7265X read range\n(small box)",
                                                width=20, command=self.read_as7265x)
         self.as7265x_int_led_range.pack(side='top', padx=5, pady=20)
@@ -118,7 +131,7 @@ class AS726X_GUI_v1(tk.Tk):
             self.device.write("as7265x, lp55231_1, lp55231_2 = init()")
         # self.led = 0
         # self.lp55231_led = 0
-        self.led_str = None
+        # self.led_str = None
 
     def toggle_multi_leds(self):
         print('toggle led = ', self.use_multiple_leds.get())
@@ -136,20 +149,9 @@ class AS726X_GUI_v1(tk.Tk):
             self.save_data(all_data, "AS7262")
 
     def read_as7265x(self):
-        # _led_str, _light = self.led_choice.get()
-        # print('selected led: ', _led_str, )
-        # print(_light)
-        #
-        # _onboard_leds, _lp55231_leds = _light.get_single_led_str()
-        # print(_onboard_leds, _lp55231_leds)
-        # all_data = self.device.read_range_as7265x(on_board_led=_onboard_leds,
-        #                                           lp55231_channel=_lp55231_leds)
         _led_str, _onboard_leds, _lp55231_leds = self.led_choice.get()
         all_data = self.device.read_range_as7265x(on_board_led=_onboard_leds,
                                                   lp55231_channel=_lp55231_leds)
-
-
-        print(all_data)
         for key in serial_comm.INT_TIMES_AS7265X:
             data = all_data[key]
             print(key, data, data.raw_data)
@@ -158,17 +160,31 @@ class AS726X_GUI_v1(tk.Tk):
                                      "Saturated data at {0} ms integration time".format(2.8 * key))
             print('kk: ', data)
             self.graph.update_data(AS7265X_WAVELENGTHS, data.norm_data, key)
-            self.save_as7265x_data(data, "AS7265X", self.led_str)
-            print("Light source: {0}".format(self.led_str))
+            self.save_as7265x_data(data, "AS7265X", _led_str)
+            print("Light source: {0}".format(_led_str))
 
-    def save_as7265x_data(self, data, type, light_str):
+    def save_as7265x_data(self, data, _type, light_str):
         print('end4: ', data, light_str)
         print('=================')
         print('saving data: ', data.print_data())
-        if type == "AS7262":
+
+        if _type == "AS7262":
             filename = self.as7262_filename
-        elif type == "AS7265X":
+        elif _type == "AS7265X":
             filename = self.as7265x_filename
+        print("headker1: ", os.path.isfile(filename), filename)
+        # if there is not a file yet, add the header file
+        if not os.path.isfile(filename):
+            header = 'leaf number, sensor type, gain, integration time, data type,'
+            for wavelength in AS7265X_SORTED_WAVELENGTHS:
+                header += " {0} nm,".format(wavelength)
+            header += " data type,"
+            for wavelength in AS7265X_SORTED_WAVELENGTHS:
+                header += " {0} nm,".format(wavelength)
+            print("headker2: ")
+            print(header)
+            with open(filename, 'a') as _file:
+                _file.write(header+'\n')
 
         with open(filename, 'a') as _file:
             print("leave: ", self.leave_number_spinbox.get())

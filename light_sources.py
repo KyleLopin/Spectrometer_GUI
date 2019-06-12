@@ -46,6 +46,9 @@ class SingleLEDFrame(tk.Frame):
 
     def get(self):
         _led_choice = self._led_choices.get()
+        print('led choice: ', _led_choice, type(_led_choice))
+        if _led_choice == "None":
+            return "None", [], []
         _onboard_led, lp55231_leds = self.lights[_led_choice].get_single_led_str()
 
         # return _led_choice, self.lights[_led_choice]
