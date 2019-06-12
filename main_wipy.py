@@ -17,6 +17,7 @@ from tkinter import ttk
 import os
 # local files
 import light_sources
+import progress_toplevel
 import pyplot_embed
 import serial_comm
 
@@ -51,6 +52,10 @@ LIGHTS = OrderedDict()
 USE_SINGLE_LED = 0
 USE_MULTIPLE_LEDS = 1
 
+INT_TIMES_AS7265X = [5, 10, 20, 40, 60, 80, 120, 160, 200, 250]  # milliseconds
+# INT_TIMES_AS7265X = [50, 100]  # for quick testing
+DELAY_BETWEEN_READS = 1000  # milliseconds
+
 
 class AS726X_GUI_v1(tk.Tk):
 
@@ -58,7 +63,7 @@ class AS726X_GUI_v1(tk.Tk):
         tk.Tk.__init__(self, parent)
         logging.basicConfig(format='%(asctime)s %(message)s',
                             datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
-        self.device = serial_comm.WiPySerial(AS7265X_SORT_INDEX)
+        self.device = serial_comm.WiPySerial(self, AS7265X_SORT_INDEX)
         # make the graph frame, the parent class is a tk.Frame
         self.graph = pyplot_embed.SpectroPlotterBasic(self)
         # print('plot: ', sensor, self.graph)
@@ -149,19 +154,43 @@ class AS726X_GUI_v1(tk.Tk):
             self.save_data(all_data, "AS7262")
 
     def read_as7265x(self):
-        _led_str, _onboard_leds, _lp55231_leds = self.led_choice.get()
-        all_data = self.device.read_range_as7265x(on_board_led=_onboard_leds,
-                                                  lp55231_channel=_lp55231_leds)
-        for key in serial_comm.INT_TIMES_AS7265X:
-            data = all_data[key]
-            print(key, data, data.raw_data)
+        all_data = {}
+        led_str, _onboard_leds, _lp55231_leds = self.led_choice.get()
+        progress_bar = progress_toplevel.ProgressIndicator(self.master,
+                                                           INT_TIMES_AS7265X,
+                                                           DELAY_BETWEEN_READS)
+        for int_time in INT_TIMES_AS7265X:
+            progress_bar.update_progress(int_time)
+            progress_bar.update()
+            msg = "AS7265X_Read({0}, {1}, {2})".format(int_time,
+                                                       _lp55231_leds,
+                                                       _onboard_leds)
+            print("writing: ", msg)
+            self.device.write(msg)
+            data = self.device.read_single_data_read(b"AS7265X")
+
             if self.check_if_saturated(data.raw_data):
                 messagebox.showerror("Saturation Error",
-                                     "Saturated data at {0} ms integration time".format(2.8 * key))
-            print('kk: ', data)
-            self.graph.update_data(AS7265X_WAVELENGTHS, data.norm_data, key)
-            self.save_as7265x_data(data, "AS7265X", _led_str)
-            print("Light source: {0}".format(_led_str))
+                                     "Saturated data at {0} ms integration time".format(2.8 * int_time))
+
+            self.graph.update_data(AS7265X_WAVELENGTHS, data.norm_data, int_time)
+            self.save_as7265x_data(data, "AS7265X", led_str)
+            print("Light source: {0}".format(led_str))
+        progress_bar.destroy()
+
+        # _led_str, _onboard_leds, _lp55231_leds = self.led_choice.get()
+        # all_data = self.device.read_range_as7265x(on_board_led=_onboard_leds,
+        #                                           lp55231_channel=_lp55231_leds)
+        # for key in serial_comm.INT_TIMES_AS7265X:
+        #     data = all_data[key]
+        #     print(key, data, data.raw_data)
+        #     if self.check_if_saturated(data.raw_data):
+        #         messagebox.showerror("Saturation Error",
+        #                              "Saturated data at {0} ms integration time".format(2.8 * key))
+        #     print('kk: ', data)
+        #     self.graph.update_data(AS7265X_WAVELENGTHS, data.norm_data, key)
+        #     self.save_as7265x_data(data, "AS7265X", _led_str)
+        #     print("Light source: {0}".format(_led_str))
 
     def save_as7265x_data(self, data, _type, light_str):
         print('end4: ', data, light_str)
@@ -231,6 +260,7 @@ class AS726X_GUI_v1(tk.Tk):
 
     @staticmethod
     def check_if_saturated(data_list):
+        print(data_list)
         return max(data_list) > 65000  # 16 bit adc
 
     def toggle_as726x_indicator(self):

@@ -9,6 +9,8 @@ import time
 # installed libraries
 import serial  # pyserial
 import serial.tools.list_ports
+# local files
+import  progress_toplevel
 
 # USB-UART Constants
 DESCRIPTOR_NAME_WIN1 = "USB Serial Port"
@@ -22,11 +24,13 @@ BYTE_SIZE = serial.EIGHTBITS
 
 ONBOARD_LEDS = ["White LED", "IR LED", "UV LED"]
 LP55231_LEDS = [400, 410, 455, 465, 0, 480, 630, 890, 940]
-INT_TIMES_AS7265X = [5, 10, 20, 40, 60, 80, 120, 160, 200, 250]
-INT_TIMES_AS7265X = [50, 100]
+# INT_TIMES_AS7265X = [5, 10, 20, 40, 60, 80, 120, 160, 200, 250]  # milliseconds
+# INT_TIMES_AS7265X = [50, 100]  # for quick testing
+# DELAY_BETWEEN_READS = 1000  # milliseconds
 
 class WiPySerial:
-    def __init__(self, sort_index=None):
+    def __init__(self, master, sort_index=None):
+        self.master = master
         self.device = self.auto_find_com_port()
         self.read_all()
         self.gain = 1
@@ -37,15 +41,14 @@ class WiPySerial:
 
     @staticmethod
     def auto_find_com_port():
-        print('test')
         available_ports = serial.tools.list_ports
-        print(available_ports)
+        # print(available_ports)
         for port in available_ports.comports():  # type: serial.Serial
-            print("port:", port, DESCRIPTOR_NAME_WIN1 in port.description)
-            print('check: ', DESCRIPTOR_NAME_WIN1, port.description)
-            print(port.device)
-            print(port.name)
-            print('desc:', port.description)
+            # print("port:", port, DESCRIPTOR_NAME_WIN1 in port.description)
+            # print('check: ', DESCRIPTOR_NAME_WIN1, port.description)
+            # print(port.device)
+            # print(port.name)
+            # print('desc:', port.description)
             if (DESCRIPTOR_NAME_WIN1 in port.description or DESCRIPTOR_NAME_MAC in port.description or
                     DESCRIPTOR_NAME_WIN2 in port.description):
                 try:
@@ -53,10 +56,8 @@ class WiPySerial:
 
                     device = serial.Serial(port.device, baudrate=BAUD_RATE, stopbits=STOP_BITS,
                                            parity=PARITY, bytesize=BYTE_SIZE, timeout=1)
-                    print("returning from autofind")
                     return device  # a device could connect without an error so return
                 except Exception as error:  # didn't work so try other ports
-
                     print("Port access error: ", error)
 
     def is_connected(self):
@@ -65,7 +66,6 @@ class WiPySerial:
     def read_all(self):
         try:
             data_packet = self.device.readall()
-            print(data_packet)
             data_packets = data_packet.split(b'\r\n')
             print(data_packets)
             return data_packets
@@ -89,26 +89,22 @@ class WiPySerial:
             data[int_time] = self.read_single_data_read(b"AS7262")
         return data
 
-    # def read_range_as7265x_leds(self):
-    #     for led in [0, 1, 2]:
-    #         data = self.read_range_as7265x(None, led)
-    #         print('=================== YEILDING   ===================')
-    #         yield data, ONBOARD_LEDS[led]
-    #     for i in range(9):
-    #         data = self.read_range_as7265x(list(i), None)
-    #         yield data, "{0} nm".format(LP55231_LEDS[i])
-
-    def read_range_as7265x(self, lp55231_channel=None, on_board_led=None):
-        data = {}
-        for int_time in INT_TIMES_AS7265X:
-
-            msg = "AS7265X_Read({0}, {1}, {2})".format(int_time,
-                                                       lp55231_channel,
-                                                       on_board_led)
-            print("writing: ", msg)
-            self.write(msg)
-            data[int_time] = self.read_single_data_read(b"AS7265X")
-        return data
+    # def read_range_as7265x(self, lp55231_channel=None, on_board_led=None):
+    #     data = {}
+    #     progress_bar = progress_toplevel.ProgressIndicator(self.master,
+    #                                                        INT_TIMES_AS7265X,
+    #                                                        DELAY_BETWEEN_READS)
+    #     for int_time in INT_TIMES_AS7265X:
+    #         progress_bar.update_progress(int_time)
+    #         progress_bar.update()
+    #         msg = "AS7265X_Read({0}, {1}, {2})".format(int_time,
+    #                                                    lp55231_channel,
+    #                                                    on_board_led)
+    #         print("writing: ", msg)
+    #         self.write(msg)
+    #         data[int_time] = self.read_single_data_read(b"AS7265X")
+    #     progress_bar.destroy()
+    #     return data
 
     def read_single_data_read(self, sensor_tag: str):
         self.reading = True
@@ -122,10 +118,10 @@ class WiPySerial:
             elif (b'%s RAW DATA:' % sensor_tag) in dataline:
                 raw_data = self.parse_data_str(dataline)
                 self.data_packet.add_raw_data(raw_data)
-                if self.check_if_saturated(raw_data):
-                    self.saturation_error = True
-
-                    print("ERROR, REREAD")
+                # if self.check_if_saturated(raw_data):
+                #     self.saturation_error = True
+                #
+                #     print("ERROR, REREAD")
 
             elif (b'%s CAL DATA:' % sensor_tag) in dataline:
                 self.data_packet.add_cal_data(self.parse_data_str(dataline))
@@ -134,16 +130,11 @@ class WiPySerial:
                 self.data_packet.add_gain_n_integration(gain, _int)
             elif b'END READ' in dataline:
                 return self.data_packet
-        print('reading1: ', self.reading)
 
     @staticmethod
     def parse_data_str(data_str):
         data_str = data_str.split(b'[')[1].split(b']')[0]
         return [float(x) for x in data_str.split(b',')]
-
-    @staticmethod
-    def check_if_saturated(data_list):
-        return max(data_list) > 65000  # 16 bit adc
 
     @staticmethod
     def parse_int_n_gain(settings_str):
