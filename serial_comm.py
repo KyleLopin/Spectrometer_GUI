@@ -36,7 +36,6 @@ class WiPySerial:
         self.gain = 1
         self.reading = False
         self.data_packet = None
-        self.saturation_error = False
         self.sort_index = sort_index
 
     @staticmethod
@@ -89,27 +88,10 @@ class WiPySerial:
             data[int_time] = self.read_single_data_read(b"AS7262")
         return data
 
-    # def read_range_as7265x(self, lp55231_channel=None, on_board_led=None):
-    #     data = {}
-    #     progress_bar = progress_toplevel.ProgressIndicator(self.master,
-    #                                                        INT_TIMES_AS7265X,
-    #                                                        DELAY_BETWEEN_READS)
-    #     for int_time in INT_TIMES_AS7265X:
-    #         progress_bar.update_progress(int_time)
-    #         progress_bar.update()
-    #         msg = "AS7265X_Read({0}, {1}, {2})".format(int_time,
-    #                                                    lp55231_channel,
-    #                                                    on_board_led)
-    #         print("writing: ", msg)
-    #         self.write(msg)
-    #         data[int_time] = self.read_single_data_read(b"AS7265X")
-    #     progress_bar.destroy()
-    #     return data
-
     def read_single_data_read(self, sensor_tag: str):
         self.reading = True
-        self.saturation_error = False
-        while self.reading:
+
+        while True:
             dataline = self.device.readline()
             print('dataline: ', dataline)
             # print ((b'%s START READ' % sensor_tag) in dataline))
@@ -118,10 +100,6 @@ class WiPySerial:
             elif (b'%s RAW DATA:' % sensor_tag) in dataline:
                 raw_data = self.parse_data_str(dataline)
                 self.data_packet.add_raw_data(raw_data)
-                # if self.check_if_saturated(raw_data):
-                #     self.saturation_error = True
-                #
-                #     print("ERROR, REREAD")
 
             elif (b'%s CAL DATA:' % sensor_tag) in dataline:
                 self.data_packet.add_cal_data(self.parse_data_str(dataline))

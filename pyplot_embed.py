@@ -141,3 +141,10 @@ class SpectroPlotterBasic(tk.Frame):
         self.axis.relim()
         self.axis.autoscale_view()
         self.canvas.draw()
+
+    def delete_data(self):
+        keys = list(self.lines.keys())
+        print(keys)
+        for key in keys:
+            self.lines.pop(key).remove()
+        self.canvas.draw()

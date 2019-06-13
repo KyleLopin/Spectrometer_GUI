@@ -159,6 +159,7 @@ class AS726X_GUI_v1(tk.Tk):
         progress_bar = progress_toplevel.ProgressIndicator(self.master,
                                                            INT_TIMES_AS7265X,
                                                            DELAY_BETWEEN_READS)
+        self.graph.delete_data()
         for int_time in INT_TIMES_AS7265X:
             progress_bar.update_progress(int_time)
             progress_bar.update()
