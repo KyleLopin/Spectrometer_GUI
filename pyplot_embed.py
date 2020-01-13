@@ -17,8 +17,13 @@ import device_settings
 
 __author__ = 'Kyle Vitautas Lopin'
 
+plt.style.use('ggplot')
+
 COUNT_SCALE = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 50, 100, 300, 500, 1000, 3000, 5000, 10000, 30000, 50000, 100000]
 
+# structure (marker style, fill, color)
+MARKERS = {'White LED': ('o', 'none', 'black'), 'UV LED': ('o', 'full', 'blue'),
+           'IR LED': ('o', 'full', 'darkred'), 'AS7262': ('x', 'none', 'black')}
 
 class SpectroPlotter(tk.Frame):
     def __init__(self, parent, sensor, _size=(6, 3)):
@@ -128,23 +133,25 @@ class SpectroPlotterBasic(tk.Frame):
         # self.axis.set_ylabel('Counts')
         self.lines = {}
 
-    def update_data(self, x_data, y_data, label):
+    def update_data(self, x_data, y_data, label=None):
+        if label in MARKERS:
+            marker = MARKERS[label][0]
+            fill = MARKERS[label][1]
+            color = MARKERS[label][2]
 
         if label in self.lines:
-            print("updating data")
             self.lines[label].set_xdata(x_data)
             self.lines[label].set_ydata(y_data)
         else:
-            newline, = self.axis.plot(x_data, y_data, 'o', label="{0} ms".format(2.8*label))
+            newline, = self.axis.plot(x_data, y_data, marker, label=label, fillstyle=fill, c=color)
             self.lines[label] = newline
-        plt.legend(title='Integration Time')
+        plt.legend(title='Sensor')
         self.axis.relim()
         self.axis.autoscale_view()
         self.canvas.draw()
 
     def delete_data(self):
         keys = list(self.lines.keys())
-        print(keys)
         for key in keys:
             self.lines.pop(key).remove()
         self.canvas.draw()

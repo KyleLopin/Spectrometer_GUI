@@ -16,8 +16,17 @@ import device_settings
 import psoc_spectrometers
 import pyplot_embed
 import reg_toplevel
+import serial_comm
 import spectro_frame
 
+
+AS7265X_WAVELENGTHS = [610, 680, 730, 760, 810, 860,
+                       560, 585, 645, 705, 900, 940,
+                       410, 435, 460, 485, 510, 535]
+
+# sort the wavelenghts of AS7265x
+AS7265X_SORT_INDEX = sorted(range(len(AS7265X_WAVELENGTHS)),
+                            key=AS7265X_WAVELENGTHS.__getitem__)
 
 
 __author__ = 'Kyle Vitautas Lopin'
@@ -65,19 +74,19 @@ class SpectrometerGUI(tk.Tk):
         # main_frame.pack(side='top', fill=tk.BOTH, expand=True)
 
         # attach the actual device and make an easier to use alias for the
-        self.device = psoc_spectrometers.PSoC(self)
-
+        # self.device = psoc_spectrometers.PSoC(self)
+        self.device = serial_comm.ArduinoSerial(self, AS7265X_SORT_INDEX)
         # check what devices are attached
 
         self.sensors = self.device.sensors
         self.notebook = ttk.Notebook(self)
 
-        for i, possible_sensor in enumerate(["AS7262", "AS7263"]):
-            for sensor in self.device.sensors:
-                if sensor.sensor_type == possible_sensor:
-                    new_sensor_frame = spectro_frame.ColorSpectorFrame(self, self.notebook, sensor, self.device)
-                    self.notebook.add(new_sensor_frame, text=sensor.sensor_type)
-        self.notebook.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
+        # for i, possible_sensor in enumerate(["AS7262", "AS7263"]):
+        #     for sensor in self.device.sensors:
+        #         if sensor.sensor_type == possible_sensor:
+        #             new_sensor_frame = spectro_frame.ColorSpectorFrame(self, self.notebook, sensor, self.device)
+        #             self.notebook.add(new_sensor_frame, text=sensor.sensor_type)
+        # self.notebook.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
 
 
         # # make the graph frame, the parent class is a tk.Frame
@@ -88,6 +97,10 @@ class SpectrometerGUI(tk.Tk):
         # self.buttons_frame = ButtonFrame(main_frame, self.graph, self.device, self.device.sensors)
         # self.buttons_frame.pack(side='left', padx=10)
         #
+
+        self.graph = pyplot_embed.SpectroPlotterBasic(self)
+
+
         # # make the status frame with the connect button and status information
         self.status_frame = StatusFrame(self, self.device)
         self.status_frame.pack(side='top', fill=tk.X)
