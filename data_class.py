@@ -9,7 +9,7 @@ from tkinter import messagebox
 from tkinter import filedialog
 # local files
 import device_settings
-import main_gui
+import main_gui_old
 import psoc_spectrometers
 
 
@@ -110,10 +110,10 @@ class SpectrometerData(object):
             self.measurement_mode = measurement_mode
         # measurement_mode = self.settings.measurement_mode_var.get()
         logging.debug("setting data type: {0}".format(measurement_mode))
-        if measurement_mode == main_gui.DisplayTypes.counts.value:
+        if measurement_mode == main_gui_old.DisplayTypes.counts.value:
             logging.debug("setting data as counts")
             self.current_data = self.counts
-        elif measurement_mode == main_gui.DisplayTypes.concentration.value:
+        elif measurement_mode == main_gui_old.DisplayTypes.concentration.value:
             logging.debug("setting data as moles")
             self.current_data = self.conc_levels
         else:

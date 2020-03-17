@@ -11,7 +11,7 @@ import tkinter as tk
 from tkinter import messagebox
 # local files
 import device_settings
-import main_gui
+import main_gui_old
 import pyplot_embed
 import spectro_frame
 import usb_comm
@@ -65,7 +65,7 @@ class USB(object):
 
 class AS726X(object):
     def __init__(self, usb_communication: USB, sensor_type, master_app):
-        self.master = master_app  # type: main_gui.SpectrometerGUI
+        self.master = master_app  # type: main_gui_old.SpectrometerGUI
         self.usb = usb_communication
         self.sensor_type = sensor_type
         self.settings = device_settings.AS726X_Settings(self, sensor_type)
@@ -173,7 +173,7 @@ class ThreadedDataLoop(threading.Thread):
 class ConnectionStatusToplevel(tk.Toplevel):
     def __init__(self, master, status_str):
         tk.Toplevel.__init__(self)
-        self.master = master  # type: main_gui.SpectrometerGUI
+        self.master = master  # type: main_gui_old.SpectrometerGUI
         self.status_str = status_str  # type: tk.StringVar
         self.geometry("300x300")
         self.attributes('-topmost', True)

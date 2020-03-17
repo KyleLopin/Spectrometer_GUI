@@ -7,8 +7,7 @@ import logging
 import tkinter as tk
 from tkinter import messagebox
 # installed libraries
-import matplotlib
-matplotlib.use("TkAgg")
+import matplotlib as mp
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib import pyplot as plt
 # local files
@@ -106,23 +105,25 @@ class SpectroPlotter(tk.Frame):
 
 
 class SpectroPlotterBasic(tk.Frame):
-    def __init__(self, parent, _size=(6, 3)):
+    def __init__(self, parent, _size=(7, 4)):
         tk.Frame.__init__(self, master=parent)
         self.scale_index = 7
 
         # routine to make and embed the matplotlib graph
-        self.figure_bed = plt.figure(figsize=_size)
-        self.axis = self.figure_bed.add_subplot(111)
+        self.figure = mp.figure.Figure(figsize=_size)
+        self.axis = self.figure.add_subplot(111)
 
-        # self.figure_bed.set_facecolor('white')
-        self.canvas = FigureCanvasTkAgg(self.figure_bed, self)
-        self.canvas._tkcanvas.config(highlightthickness=0)
-
-        toolbar = NavigationToolbar2Tk(self.canvas, self)
-        toolbar.update()
-
-        self.canvas._tkcanvas.pack(side='top', fill=tk.BOTH, expand=True)
+        self.figure.set_facecolor('white')
+        self.canvas = FigureCanvasTkAgg(self.figure, self)
+        # self.canvas._tkcanvas.config(highlightthickness=0)
         self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        #
+        # toolbar = NavigationToolbar2Tk(self.canvas, self)
+        # toolbar.update()
+        #
+        # self.canvas._tkcanvas.pack(side='top', fill=tk.BOTH, expand=True)
+
 
         # self.axis.set_xlim([600, 900])
         self.axis.set_xlabel("wavelength (nm)")
