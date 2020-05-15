@@ -4,6 +4,8 @@
 
 # standard libraries
 import logging
+import queue
+import threading
 import tkinter as tk
 from tkinter import messagebox
 # installed libraries
@@ -22,7 +24,8 @@ COUNT_SCALE = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 50, 100, 300, 500, 1000, 3000
 
 # structure (marker style, fill, color)
 MARKERS = {'White LED': ('o', 'none', 'black'), 'UV LED': ('o', 'full', 'blue'),
-           'IR LED': ('o', 'full', 'darkred'), 'AS7262': ('x', 'none', 'black')}
+           'IR LED': ('o', 'full', 'darkred'), 'AS7262': ('x', 'none', 'black'),
+           'AS7262': ('x', 'none', 'black')}
 
 class SpectroPlotter(tk.Frame):
     def __init__(self, parent, sensor, _size=(6, 3)):
@@ -118,12 +121,6 @@ class SpectroPlotterBasic(tk.Frame):
         # self.canvas._tkcanvas.config(highlightthickness=0)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        #
-        # toolbar = NavigationToolbar2Tk(self.canvas, self)
-        # toolbar.update()
-        #
-        # self.canvas._tkcanvas.pack(side='top', fill=tk.BOTH, expand=True)
-
 
         # self.axis.set_xlim([600, 900])
         self.axis.set_xlabel("wavelength (nm)")
@@ -135,21 +132,34 @@ class SpectroPlotterBasic(tk.Frame):
         self.lines = {}
 
     def update_data(self, x_data, y_data, label=None):
+        print('label = ', label)
         if label in MARKERS:
             marker = MARKERS[label][0]
             fill = MARKERS[label][1]
             color = MARKERS[label][2]
+        else:
+            marker = 'o'
+            fill = 'full'
+            color = 'black'
 
         if label in self.lines:
             self.lines[label].set_xdata(x_data)
             self.lines[label].set_ydata(y_data)
         else:
-            newline, = self.axis.plot(x_data, y_data, marker, label=label, fillstyle=fill, c=color)
+            newline, = self.axis.plot(x_data, y_data, label=label)
             self.lines[label] = newline
-        plt.legend(title='Sensor')
+        handle, labels = self.axis.get_legend_handles_labels()
+        plt.legend(handle, labels, loc='upper right',
+                   bbox_to_anchor=(1, 0.5),
+                   title='Data series',
+                   prop={'size': 10}, fancybox=True)
         self.axis.relim()
         self.axis.autoscale_view()
         self.canvas.draw()
+
+    # def add_data(self, x_data, y_data, label=None):
+    #     newline, = self.axis.plot(x_data, y_data, marker, label=label, fillstyle=fill, c=color)
+    #     self.lines[label] = newline
 
     def delete_data(self):
         keys = list(self.lines.keys())

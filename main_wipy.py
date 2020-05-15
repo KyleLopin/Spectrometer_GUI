@@ -58,7 +58,7 @@ USE_SINGLE_LED = 0
 USE_MULTIPLE_LEDS = 1
 
 INT_TIMES_AS7265X = [5, 10, 20, 40, 60, 80, 120, 160, 200, 250]  # milliseconds
-INT_TIMES_AS7265X = [100, 200, 250]  # for quick testing
+# INT_TIMES_AS7265X = [50, 100]  # for quick testing
 DELAY_BETWEEN_READS = 1000  # milliseconds
 
 

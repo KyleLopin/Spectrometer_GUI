@@ -165,17 +165,21 @@ class AS726XRead:
         self.norm_data = self.normalize_data(self.calibrated_data, self.integration_cycles)
 
     def add_raw_data(self, raw_data):
+        self.raw_data = raw_data
         if self.sort_index:
             print('sorting')
-            self.raw_data = [raw_data[i] for i in self.sort_index]
+            # self.raw_data = [raw_data[i] for i in self.sort_index]
         else:
             self.raw_data = raw_data
         print('sorting data: ', raw_data)
         print(self.raw_data)
 
     def add_cal_data(self, cal_data):
+        print('type: ', self.type)
+        self.calibrated_data = cal_data
         if self.sort_index:
-            self.calibrated_data = [cal_data[i] for i in self.sort_index]
+            # self.calibrated_data = [cal_data[i] for i in self.sort_index]
+            pass
         else:
             self.calibrated_data = cal_data
         print('add cal data', self.calibrated_data)
