@@ -43,10 +43,11 @@ class AS7262():
         return string
 
     def display(self, master):
+        pad_y = 5
         sensor_frame = tk.Frame(master, relief=tk.RIDGE, bd=5)
         text_str = self.__str__()
-        tk.Label(sensor_frame, text=text_str).pack(side=tk.TOP)
-        sensor_frame.pack(side=tk.LEFT)
+        tk.Label(sensor_frame, text=text_str).pack(side=tk.TOP, pady=pad_y)
+        sensor_frame.pack(side=tk.LEFT, expand=2, fill=tk.BOTH, pady=pad_y)
 
         ind_options = ["No Indicator", "Indicator LED on", "Flash Indicator LED"]
         if self.has_button:
@@ -56,28 +57,21 @@ class AS7262():
         self.ind_opt_var.set(ind_options[0])
 
         tk.OptionMenu(sensor_frame, self.ind_opt_var, *ind_options,
-                      command=self.indicator_options).pack(side=tk.TOP)
+                      command=self.indicator_options).pack(side=tk.TOP, pady=pad_y)
 
         # LED display options
-        tk.Label(sensor_frame, text="Measurement\nLighting options:").pack(side=tk.TOP)
+        tk.Label(sensor_frame, text="Measurement\nLighting options:").pack(side=tk.TOP, pady=pad_y)
         led_options = ["No lights", "Light on", "Flash light"]
 
         self.led_opt_var = tk.StringVar()
-        self.led_opt_var.set(led_options[0])
+        self.led_opt_var.set(led_options[2])
 
         tk.OptionMenu(sensor_frame, self.led_opt_var, *led_options,
-                      command=self.set_led_option).pack(side=tk.TOP)
+                      command=self.set_led_option).pack(side=tk.TOP, pady=pad_y)
 
-        tk.Button(sensor_frame, text="Read Sensor", relief=tk.RAISED,
-                  command=self.read_sensor).pack(side=tk.TOP)
+        tk.Button(sensor_frame, text="Read Sensor", command=self.read_sensor).pack(side=tk.TOP, pady=pad_y)
 
         self.tracker = TrackerFrame(self, sensor_frame)
-        # self.tracker.pack(side=tk.TOP)
-        # tracker_frame = tk.Frame(master)
-
-        # tk.Label(sensor_frame, text=text_str).pack(side=tk.TOP)
-        # tk.Label(sensor_frame, text="hello").pack(tk.TOP)
-
         self.tracker.pack(side=tk.TOP)
 
     def read_sensor(self):

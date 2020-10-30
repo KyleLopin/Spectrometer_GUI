@@ -9,6 +9,7 @@ __author__ = "Kyle Vitatus Lopin"
 
 # standard libraries
 import tkinter as tk
+import tkinter.font as tkFont
 from tkinter import ttk
 # installed libraries
 import numpy as np
@@ -23,10 +24,15 @@ from matplotlib.backends.backend_tkagg import (
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
 
+# _font = tkFont.Font(family="Helvetica", size=24)
+# _font = tkFont.Font(family="Lucida Grande", size=24)
 
 class SpectralSensorGUI(tk.Tk):
     def __init__(self, parent=None):
         tk.Tk.__init__(self, parent)
+
+        style = ttk.Style(self)
+        style.configure('lefttab.TNotebook', tabposition='ne')
         # access the class to control the Arduino
         # / Red board that the sensor are attached to
         self.device = arduino.ArduinoColorSensors(self)
@@ -35,8 +41,9 @@ class SpectralSensorGUI(tk.Tk):
             pass
         # make the graph area
         self.graph = pyplot_embed.SpectroPlotterBasic(self)
-        self.graph.pack(side=tk.TOP, fill=tk.BOTH, expand=2)
-        ButtonFrame(self, self.device).pack(side=tk.BOTTOM, fill=tk.X)
+        self.graph.pack(side=tk.LEFT, fill=tk.BOTH, expand=2)
+        # ButtonFrame(self, self.device).pack(side=tk.BOTTOM, fill=tk.X)
+        ButtonFrame(self, self.device).pack(side=tk.RIGHT, fill=tk.Y)
         self.after(100, self.look_for_data)
 
     def look_for_data(self):
@@ -48,7 +55,7 @@ class SpectralSensorGUI(tk.Tk):
             else:
                 data = sensor.data
                 label = "{0}: {1} cycles, {2} {3} led current".format(sensor.name,
-                                  data.int_cycles,data.led_current, data.LED)
+                                  data.int_cycles, data.led_current, data.LED)
                 print("============>>>>>>>>>>>>>>>>>>> ", label)
                 self.graph.update_data(data.wavelengths,
                                        data.norm_data,
@@ -58,6 +65,62 @@ class SpectralSensorGUI(tk.Tk):
 
 
 class ButtonFrame(tk.Frame):
+    def __init__(self, master, device: arduino.ArduinoColorSensors):
+
+        tk.Frame.__init__(self, master=master)
+        # notebook = ttk.Notebook(self, style='lefttab.TNotebook')
+        self.notebook = ttk.Notebook(self)
+        self.sensors = device.sensors
+        print('=======', len(self.sensors))
+        self.tabs = []
+        self.tab_names = []
+        for sensor in self.sensors:
+            tab = tk.Frame(self)
+            print(dir(sensor))
+            sensor.display(tab)
+            tab_display = "{0} [{1}]".format(sensor.name, sensor.qwiic_port)
+            self.notebook.add(tab, text=tab_display)
+            self.tabs.append(tab)
+            self.tab_names.append(sensor.name)
+        self.notebook.pack(side=tk.TOP, fill=tk.BOTH, expand=2)
+
+        self.make_summary_frame()
+
+    def make_summary_frame(self):
+        pad_y = 5
+
+        _font = tkFont.Font(family="Helvetica", size=10)
+        for sensor in self.sensors:
+            sum_frame = tk.Frame(self, relief=tk.RIDGE, bd=2)
+            sum_frame.bind("<Button-1>", lambda event, s=sensor: self.label_press(event, s))
+            _label = tk.Label(sum_frame, font=_font,
+                              text="{0} on port: {1}".format(sensor.name, sensor.qwiic_port))
+            _label.pack(side=tk.TOP, expand=1, fill=tk.BOTH,
+                        pady=pad_y, padx=2)
+            _label.bind("<Button-1>", lambda event, s=sensor: self.label_press(event, s))
+            print("bind")
+            # _label.bind("<Button-1>", lambda event, s=sensor: self.label_press(event, s))
+
+            print("bind2")
+            tk.Button(sum_frame, text="Read Sensor",
+                      command=sensor.read_sensor
+                      ).pack(side=tk.TOP, expand=1, fill=tk.BOTH,
+                             pady=pad_y, padx=2)
+
+            sum_frame.pack(side=tk.TOP, fill=tk.BOTH)
+
+    def label_press(self, event, sensor):
+        print(event.widget)
+        print(dir(event))
+        print(dir(event.widget))
+        print(sensor)
+        print(sensor.name)
+        print(self.tab_names.index(sensor.name))
+        tab_index = self.tab_names.index(sensor.name)
+        self.notebook.select(self.tabs[tab_index])
+
+
+class ButtonFrame_old(tk.Frame):
     def __init__(self, master, device):
         tk.Frame.__init__(self, master=master)
         # self.config(bg='red', bd=5)

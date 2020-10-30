@@ -108,7 +108,7 @@ class SpectroPlotter(tk.Frame):
 
 
 class SpectroPlotterBasic(tk.Frame):
-    def __init__(self, parent, _size=(7, 4)):
+    def __init__(self, parent, _size=(5, 4)):
         tk.Frame.__init__(self, master=parent)
         self.scale_index = 7
 

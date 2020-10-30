@@ -21,10 +21,12 @@ DESCRIPTOR_NAME_MAC1 = "FT230X Basic UART"
 DESCRIPTOR_NAME_MAC2 = "Expansion3"
 DESCRIPTOR_NAME_MAC3 = "RedBoard Turbo"
 DESCRIPTOR_NAME_MAC4 = "USB2.0-Serial"
+DESCRIPTOR_NAME_ARTEMIS = "USB-SERIAL CH340"
 BAUD_RATE = 115200
 DESCRIPTOR_NAMES = [DESCRIPTOR_NAME_WIN1, DESCRIPTOR_NAME_WIN2,
                     DESCRIPTOR_NAME_MAC1, DESCRIPTOR_NAME_MAC2,
-                    DESCRIPTOR_NAME_MAC3, DESCRIPTOR_NAME_MAC4]
+                    DESCRIPTOR_NAME_MAC3, DESCRIPTOR_NAME_MAC4,
+                    DESCRIPTOR_NAME_ARTEMIS]
 
 ID_NAME = b"Naresuan Color Sensor Setup"
 
@@ -41,7 +43,8 @@ class Arduino_old:
             # print('desc:', port.description)
             # print(DESCRIPTOR_NAMES)
             for name in DESCRIPTOR_NAMES:
-                if name in port.description:
+                # if name in port.description:
+                if True:
                     try:
                         device = serial.Serial(port.device, baudrate=BAUD_RATE,
                                                timeout=1)
@@ -124,26 +127,30 @@ class Arduino(threading.Thread):
     def auto_find_com_port():
         available_ports = serial.tools.list_ports
         for port in available_ports.comports():  # type: serial.Serial
-            # print(port.device)
-            # print(port.name)
-            # print('desc:', port.description)
-            # print(DESCRIPTOR_NAMES)
-            for name in DESCRIPTOR_NAMES:
-                if name in port.description:
-                    try:
-                        device = serial.Serial(port.device, baudrate=BAUD_RATE,
-                                               timeout=1)
-                        device.readline()  # clear anything it may respond with first
-                        device.write(b"Id")
-                        for i in range(5):
-                            input = device.readline()
-                            # it should respond with correct ID but may take a few lines
-                            if ID_NAME in input:
-                                print("Found device")
-                                return device  # a device could connect without an error so return
+            print(port.device)
+            print(port.name)
+            print('desc:', port.description)
+            print(DESCRIPTOR_NAMES)
+            # for name in DESCRIPTOR_NAMES:
+            #     print('name: {0}|{1}'.format(name, port.description))
+                # if name in port.description:
+            if True:
+                print('----')
+                try:
+                    device = serial.Serial(port.device, baudrate=BAUD_RATE,
+                                           timeout=1)
+                    device.readline()  # clear anything it may respond with first
+                    device.write(b"Id")
+                    for i in range(5):
+                        input = device.readline()
+                        # it should respond with correct ID but may take a few lines
+                        print("Got input: ", input)
+                        if ID_NAME in input:
+                            print("Found device")
+                            return device  # a device could connect without an error so return
 
-                    except Exception as error:  # didn't work so try other ports
-                        print("Port access error: ", error)
+                except Exception as error:  # didn't work so try other ports
+                    print("Port access error: ", error)
 
     def run(self):
         self.running = True
@@ -188,7 +195,6 @@ class Arduino(threading.Thread):
         if type(message) is str:
             message = message.encode()
         self.output.put(message)
-
 
 
 class ArduinoColorSensors(Arduino):
