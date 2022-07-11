@@ -77,7 +77,9 @@ class ButtonFrame(tk.Frame):
         for sensor in self.sensors:
             tab = tk.Frame(self)
             print(dir(sensor))
-            sensor.display(tab)
+            # sensor.display(tab)
+            # self.make_sensor_display(sensor, tab)
+            SensorFrame(sensor, tab)
             tab_display = "{0} [{1}]".format(sensor.name, sensor.qwiic_port)
             self.notebook.add(tab, text=tab_display)
             self.tabs.append(tab)
@@ -120,24 +122,84 @@ class ButtonFrame(tk.Frame):
         self.notebook.select(self.tabs[tab_index])
 
 
-class ButtonFrame_old(tk.Frame):
-    def __init__(self, master, device):
-        tk.Frame.__init__(self, master=master)
-        # self.config(bg='red', bd=5)
-        self.sensors = device.sensors
-        print('=======', len(self.sensors))
-        for sensor in self.sensors:
-            print(sensor)
-            # sensor_frame = tk.Frame(self, relief=tk.RIDGE, bd=5)
-            # text_str = sensor.__str__()
-            # tk.Label(sensor_frame, text=text_str).pack(side=tk.LEFT)
-            # sensor_frame.pack(side=tk.LEFT)
-            # tk.Checkbutton(sensor_frame, text="Turn on indicator", )
-            sensor.display(master)
+class SensorFrame(tk.Frame):
+    def __init__(self, sensor, tab):
+        tk.Frame.__init__(self, tab)
+        pad_y = 5
+        # sensor_frame = tk.Frame(tab, relief=tk.RIDGE, bd=5)
+        self.config(relief=tk.RIDGE, bd=5)
+        text_str = sensor.__str__()
+        tk.Label(self, text=text_str).pack(side=tk.TOP, pady=pad_y)
+        self.pack(side=tk.LEFT, expand=2, fill=tk.BOTH, pady=pad_y)
 
-    def turn_on_indicator(self):
-        pass
+        ind_options = ["No Indicator", "Indicator LED on", "Flash Indicator LED"]
+        if sensor.has_button:
+            ind_options.extend(["Button LED on", "Flash Button LED"])
 
+        sensor.ind_opt_var = tk.StringVar()
+        sensor.ind_opt_var.set(ind_options[0])
+
+        tk.OptionMenu(self, sensor.ind_opt_var, *ind_options,
+                      command=sensor.indicator_options).pack(side=tk.TOP, pady=pad_y)
+
+        # LED display options
+        tk.Label(self, text="Measurement\nLighting options:").pack(side=tk.TOP, pady=pad_y)
+        led_options = ["No lights", "Light on", "Flash light"]
+
+        sensor.led_opt_var = tk.StringVar()
+        sensor.led_opt_var.set(led_options[2])
+
+        tk.OptionMenu(self, sensor.led_opt_var, *led_options,
+                      command=sensor.set_led_option).pack(side=tk.TOP, pady=pad_y)
+
+        tk.Button(self, text="Read Sensor", command=sensor.read_sensor).pack(side=tk.TOP, pady=pad_y)
+
+        sensor.tracker = TrackerFrame(sensor, self)
+        sensor.tracker.pack(side=tk.TOP)
+        ttk.Separator(self, orient=tk.HORIZONTAL).pack(side=tk.TOP, fill=tk.X, pady=2)
+        self.make_settings_frame()
+
+    def make_settings_frame(self):
+        settings_frame = tk.Frame(self, relief=tk.GROOVE)
+
+
+
+class TrackerFrame(tk.Frame):
+    def __init__(self, sensor, master):
+        tk.Frame.__init__(self, master)
+        print(type(master))
+        print(type(self))
+        self.read_num = 1
+        self.leaf_num = tk.IntVar()
+        self.leaf_num.set(1)
+        self.read_label = tk.Label(self,
+                          text="Read: {0}".format(self.read_num))
+        self.read_label.pack(side=tk.TOP)
+        # tk.Label(self, text="hello").pack(side=tk.TOP)
+        leaf_num_frame = tk.Frame(self)
+        tk.Label(leaf_num_frame, text="Leaf number:").pack(side=tk.LEFT)
+        tk.Spinbox(leaf_num_frame, from_=0, textvariable=self.leaf_num,
+                   command=self.increase_leaf, width=2).pack(side=tk.LEFT)
+        leaf_num_frame.pack(side=tk.TOP)
+
+    def update_read(self, increase: bool):
+        print('update readpPp:', self.read_num)
+        if increase:
+            self.read_num += 1
+        else:
+            self.read_num = 1
+        self.read_label.config(text="Read: {0}".format(self.read_num))
+        print('update read', self.read_num)
+    #
+    def increase_leaf(self):
+        self.update_read(False)
+        self.leaf_num.set(self.leaf_num.get()+1)
+
+    def get_read_num(self):
+        return self.read_num
+
+    def get_leave_num(self):
+        return self.leaf_num.get()
 
 
 if __name__ == '__main__':

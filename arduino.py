@@ -201,6 +201,7 @@ class ArduinoColorSensors(Arduino):
     def __init__(self, master):
         print('check')
         Arduino.__init__(self)
+        print("back")
         self.start()
         self.master = master
         self.graph_event = threading.Event()
@@ -210,6 +211,7 @@ class ArduinoColorSensors(Arduino):
         if not self.device:
             return
         self.write(b"Setup")
+        print("Making startup")
         self.starting_up = True
         self.sensor = None
         self.new_data = False
