@@ -31,16 +31,20 @@ class SpectralSensorGUI(tk.Tk):
         while self.device.starting_up:
             pass  # wait till sensor is setup (is on a seperate thread)
         data_notebook = ttk.Notebook(self)
-        data_notebook.pack(side=tk.LEFT, anchor=tk.NW)
+
         # make the graph area
         self.graph = pyplot_embed.SpectroPlotterBasic(data_notebook)
-        self.graph.pack(side=tk.LEFT, fill=tk.Y, expand=True)
+        self.graph.pack(side=tk.LEFT, fill=tk.BOTH, expand=2)
         data_notebook.add(self.graph, text="Data")
+        data_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=2)
         # self.graph.grid(columnspan=2, rowspan=2)
         device_frame = ButtonFrame(self, self.device)
+        print('done device frame')
         # device_frame.grid(column=1, rowspan=3)
-        device_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-        device_frame.pack_propagate(0)
+        device_frame.pack(side=tk.RIGHT, fill=tk.BOTH)
+        print('done device frame2')
+        device_frame.pack_propagate(1)
+        print('done device frame23')
         self.after(100, self.look_for_data)
 
     def look_for_data(self):
@@ -73,15 +77,15 @@ class ButtonFrame(tk.Frame):
         self.tab_names = []
         for sensor in self.sensors:
             tab = tk.Frame(self)
-            print(dir(sensor))
+            print(f"sensor: {sensor}")
             # sensor.display(tab)
             # self.make_sensor_display(sensor, tab)
-            SensorFrame(sensor, tab)
+            SensorFrame(tab, sensor)
             tab_display = "{0} [{1}]".format(sensor.name, sensor.qwiic_port)
             self.notebook.add(tab, text=tab_display)
             self.tabs.append(tab)
             self.tab_names.append(sensor.name)
-        self.notebook.pack(side=tk.TOP, fill=tk.BOTH, expand=2)
+        self.notebook.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
         self.make_summary_frame()
 
@@ -121,7 +125,7 @@ class ButtonFrame(tk.Frame):
 
 class SensorFrame(tk.Frame):
     def __init__(self, master, sensor):
-        print(f"device: {type(sensor)}", {sensor.device})
+        print(f"sensor: {type(sensor)}")
         print(f"master: {type(master)}")
         tk.Frame.__init__(self, master)
         pad_y = 5

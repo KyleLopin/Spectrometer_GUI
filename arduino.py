@@ -26,7 +26,7 @@ BAUD_RATE = 115200
 DESCRIPTOR_NAMES = [DESCRIPTOR_NAME_WIN1, DESCRIPTOR_NAME_WIN2,
                     DESCRIPTOR_NAME_MAC1, DESCRIPTOR_NAME_MAC2,
                     DESCRIPTOR_NAME_MAC3, DESCRIPTOR_NAME_MAC4,
-                    DESCRIPTOR_NAME_ARTEMIS]
+                    DESCRIPTOR_NAME_ARTEMIS, "USB-SERIAL"]
 
 ID_NAME = b"Naresuan Color Sensor Setup"
 
@@ -139,6 +139,7 @@ class Arduino(threading.Thread):
                     device = serial.Serial(port.device, baudrate=BAUD_RATE,
                                            timeout=1)
                     # device.readline()  # clear anything it may respond with first
+                    print('---2')
                     self.initial_lines = self.process_initial_serial(device)
                     device.write(b"Id")
                     for i in range(5):
@@ -158,6 +159,12 @@ class Arduino(threading.Thread):
             return True
         elif _port.description in DESCRIPTOR_NAMES:
             return True
+        else:
+            for possible_names in DESCRIPTOR_NAMES:
+                print('pn', possible_names, _port.description)
+                if possible_names in _port.description:
+                    print('back3')
+                    return True
         return False
 
     @staticmethod
@@ -165,7 +172,7 @@ class Arduino(threading.Thread):
         initial_lines = []
         while True:
             line = _device.readline()
-            print(f"line: {line}")
+            print(line)
             initial_lines.append(line)
             if not line:
                 break
@@ -183,7 +190,7 @@ class Arduino(threading.Thread):
             if self.device.in_waiting:
                 # everything could be \r\n terminated
                 data_line = self.device.readline().strip(b'\r\n')
-                print(data_line)
+                print('run:', data_line)
                 self.parse_input(data_line)
                 # self.parse_package(data_line)
 
@@ -228,7 +235,9 @@ class ArduinoColorSensors(Arduino):
         self.has_mux = False
         self.port_list = dict()
         if not self.device:
+            print("back3", self.device)
             return
+        print("back2")
         self.write(b"Setup")
         print("Making startup")
         if self.initial_lines:
