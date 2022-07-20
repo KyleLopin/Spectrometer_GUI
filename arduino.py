@@ -117,14 +117,14 @@ class Arduino_old:
 class Arduino(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
+        self.initial_lines = []
         self.device = self.auto_find_com_port()
         self.running = False
         self.output = queue.Queue()
         self.command = None
         self.package = []
 
-    @staticmethod
-    def auto_find_com_port():
+    def auto_find_com_port(self):
         available_ports = serial.tools.list_ports
         for port in available_ports.comports():  # type: serial.Serial
             print(port.device)
@@ -133,13 +133,13 @@ class Arduino(threading.Thread):
             print(DESCRIPTOR_NAMES)
             # for name in DESCRIPTOR_NAMES:
             #     print('name: {0}|{1}'.format(name, port.description))
-                # if name in port.description:
-            if True:
+            if self.possibly_arduino(port):
                 print('----')
                 try:
                     device = serial.Serial(port.device, baudrate=BAUD_RATE,
                                            timeout=1)
-                    device.readline()  # clear anything it may respond with first
+                    # device.readline()  # clear anything it may respond with first
+                    self.initial_lines = self.process_initial_serial(device)
                     device.write(b"Id")
                     for i in range(5):
                         input = device.readline()
@@ -152,9 +152,27 @@ class Arduino(threading.Thread):
                 except Exception as error:  # didn't work so try other ports
                     print("Port access error: ", error)
 
+    @staticmethod
+    def possibly_arduino(_port: serial.Serial):
+        if _port.name in DESCRIPTOR_NAMES:
+            return True
+        elif _port.description in DESCRIPTOR_NAMES:
+            return True
+        return False
+
+    @staticmethod
+    def process_initial_serial(_device: serial.Serial):
+        initial_lines = []
+        while True:
+            line = _device.readline()
+            print(f"line: {line}")
+            initial_lines.append(line)
+            if not line:
+                break
+        return initial_lines
+
     def run(self):
         self.running = True
-
         if not self.device:  # not device so return
             return None
         while self.running:
@@ -202,19 +220,24 @@ class ArduinoColorSensors(Arduino):
         print('check')
         Arduino.__init__(self)
         print("back")
-        self.start()
+        self.starting_up = True
         self.master = master
         self.graph_event = threading.Event()
         self.graph_queue = queue.Queue()
         self.sensors = []
+        self.has_mux = False
         self.port_list = dict()
         if not self.device:
             return
         self.write(b"Setup")
         print("Making startup")
-        self.starting_up = True
-        self.sensor = None
+        if self.initial_lines:
+            for line in self.initial_lines:
+                print(line)
+            self.parse_package(b'Setup', self.initial_lines)
+        self.sensor = None  # place holder for a single sensor in the self.sensors list
         self.new_data = False
+        self.start()
 
     def parse_package(self, command, package):
         print("parse: ", command)
@@ -246,7 +269,8 @@ class ArduinoColorSensors(Arduino):
             has_button = True
             if b"No button attached" in line:
                 has_button = False
-
+            if b"Has mux" in line or b"Have mux" in line:
+                self.has_mux = True
             port = None
             if b"to port:" in line:
                 port = int(line.split(b":")[1].split(b'|')[0])
@@ -263,6 +287,7 @@ class ArduinoColorSensors(Arduino):
             print(sensor)
         print(self.port_list)
         self.starting_up = False
+        print("end setup")
 
     def data_read(self, package):
         sensor = None  #  set scope
@@ -300,7 +325,24 @@ class ArduinoColorSensors(Arduino):
         # print('check222')
         # sensor.increase_read_num()
 
+    def indicator_options(self, **kwargs):
+        print(kwargs)
+        print("Arudion color sensor set indicator options")
+
+    def set_led_option(self, **kwargs):
+        print(kwargs)
+        print("Arudion color sensor set led options")
+
     def run_command(self, command):
         self.current_command = command
         self.write('Start: {0}'.format(command))
 
+    def read_sensor(self):
+        print("read sensor")
+
+
+class ArduinoMock():
+    def __init__(self, master):
+        self.sensors = [AS726XX.AS7262(self, True, 2),
+                        AS726XX.AS7265x(self, True, 3)]
+        self.graph_event = threading.Event()

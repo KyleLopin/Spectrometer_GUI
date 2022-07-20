@@ -18,15 +18,6 @@ import arduino
 import AS726XX  # for type hinting
 import pyplot_embed
 
-from matplotlib.backends.backend_tkagg import (
-    FigureCanvasTkAgg, NavigationToolbar2Tk)
-# Implement the default Matplotlib key bindings.
-from matplotlib.backend_bases import key_press_handler
-from matplotlib.figure import Figure
-
-# _font = tkFont.Font(family="Helvetica", size=24)
-# _font = tkFont.Font(family="Lucida Grande", size=24)
-
 class SpectralSensorGUI(tk.Tk):
     def __init__(self, parent=None):
         tk.Tk.__init__(self, parent)
@@ -34,16 +25,22 @@ class SpectralSensorGUI(tk.Tk):
         style = ttk.Style(self)
         style.configure('lefttab.TNotebook', tabposition='ne')
         # access the class to control the Arduino
-        # / Red board that the sensor are attached to
+        #  Red board that the sensor are attached to
         self.device = arduino.ArduinoColorSensors(self)
         print(self.device)
         while self.device.starting_up:
-            pass
+            pass  # wait till sensor is setup (is on a seperate thread)
+        data_notebook = ttk.Notebook(self)
+        data_notebook.pack(side=tk.LEFT, anchor=tk.NW)
         # make the graph area
-        self.graph = pyplot_embed.SpectroPlotterBasic(self)
-        self.graph.pack(side=tk.LEFT, fill=tk.BOTH, expand=2)
-        # ButtonFrame(self, self.device).pack(side=tk.BOTTOM, fill=tk.X)
-        ButtonFrame(self, self.device).pack(side=tk.RIGHT, fill=tk.Y)
+        self.graph = pyplot_embed.SpectroPlotterBasic(data_notebook)
+        self.graph.pack(side=tk.LEFT, fill=tk.Y, expand=True)
+        data_notebook.add(self.graph, text="Data")
+        # self.graph.grid(columnspan=2, rowspan=2)
+        device_frame = ButtonFrame(self, self.device)
+        # device_frame.grid(column=1, rowspan=3)
+        device_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        device_frame.pack_propagate(0)
         self.after(100, self.look_for_data)
 
     def look_for_data(self):
@@ -123,18 +120,25 @@ class ButtonFrame(tk.Frame):
 
 
 class SensorFrame(tk.Frame):
-    def __init__(self, sensor, tab):
-        tk.Frame.__init__(self, tab)
+    def __init__(self, master, sensor):
+        print(f"device: {type(sensor)}", {sensor.device})
+        print(f"master: {type(master)}")
+        tk.Frame.__init__(self, master)
         pad_y = 5
         # sensor_frame = tk.Frame(tab, relief=tk.RIDGE, bd=5)
         self.config(relief=tk.RIDGE, bd=5)
-        text_str = sensor.__str__()
-        tk.Label(self, text=text_str).pack(side=tk.TOP, pady=pad_y)
-        self.pack(side=tk.LEFT, expand=2, fill=tk.BOTH, pady=pad_y)
 
+        if not sensor.device:
+            text_str = "No sensor connected"
+            tk.Label(self, text=text_str).pack(side=tk.TOP, pady=pad_y)
+            self.pack(side=tk.LEFT, expand=2, fill=tk.BOTH, pady=pad_y)
+            return
+        else:
+            text_str = sensor.__str__()
+            tk.Label(self, text=text_str).pack(side=tk.TOP, pady=pad_y)
+            self.pack(side=tk.LEFT, expand=2, fill=tk.BOTH, pady=pad_y)
         ind_options = ["No Indicator", "Indicator LED on", "Flash Indicator LED"]
-        if sensor.has_button:
-            ind_options.extend(["Button LED on", "Flash Button LED"])
+        ind_options.extend(["Button LED on", "Flash Button LED"])
 
         sensor.ind_opt_var = tk.StringVar()
         sensor.ind_opt_var.set(ind_options[0])
@@ -162,6 +166,8 @@ class SensorFrame(tk.Frame):
     def make_settings_frame(self):
         settings_frame = tk.Frame(self, relief=tk.GROOVE)
 
+    def indicator_options(self):
+        print("TODO: fill in indicator options")
 
 
 class TrackerFrame(tk.Frame):
@@ -205,5 +211,5 @@ class TrackerFrame(tk.Frame):
 if __name__ == '__main__':
     app = SpectralSensorGUI()
     app.title("Spectrograph")
-    app.geometry("800x650")
+    app.geometry("1050x650")
     app.mainloop()

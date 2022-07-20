@@ -26,6 +26,7 @@ class AS7262():
         self.name = "AS7262"
         self.qwiic_port = mux_number
         self.indicator = "Off"
+        self.button_str = "Button not found"
         self.device = arduino
         self.wavelengths = WAVELENGTH_AS7262
         self.data = SensorData(self)
@@ -36,10 +37,8 @@ class AS7262():
     def __str__(self):
         button_str = "Button not found"
         if self.has_button:
-            button_str = "Button found"
-        string = "{0} sensor| port {1}\n{2}".format(self.name,
-                                                      self.qwiic_port,
-                                                      button_str)
+            self.button_str = "Button found"
+        string = f"{self.name} sensor| port {self.qwiic_port}"
         return string
 
     def display(self, master):
@@ -72,7 +71,14 @@ class AS7262():
         tk.Button(sensor_frame, text="Read Sensor", command=self.read_sensor).pack(side=tk.TOP, pady=pad_y)
 
         self.tracker = TrackerFrame(self, sensor_frame)
-        self.tracker.pack(side=tk.TOP)
+        # self.tracker.pack(side=tk.TOP)
+        # tracker_frame = tk.Frame(master)
+
+        # tk.Label(sensor_frame, text=text_str).pack(side=tk.TOP)
+        # tk.Label(sensor_frame, text="hello").pack(tk.TOP)
+
+        self.tracker.pack(side=tk.TOP, pady=5)
+        return sensor_frame
 
     def read_sensor(self):
         print("read sensor: {0}".format(self.qwiic_port))
@@ -204,17 +210,17 @@ class SensorData():
                 _file.write(header + '\n')
 
         print('filename: ', self.sensor.filename)
-        print('leave number: ', self.sensor.tracker.get_leave_num())
-        print('read number: ', self.sensor.tracker.get_read_num())
-        data_str = "{0},{1},{2},{3},".format(self.sensor.tracker.get_leave_num(),
-                                             self.sensor.tracker.get_read_num(),
-                                             self.gain, self.int_cycles)
-        for data in self.norm_data:
-            data_str += "{0:10.3f},".format(data)
-        data_str += "{0},{1},{2},{3}\n".format(self.LED, self.led_current,
-                                               saturation_check,
-                                               datetime.now().strftime("%H:%M:%S"))
-        print(data_str)
-        with open(self.sensor.filename, mode='a',
-                  encoding='utf-8') as _file:
-            _file.write(data_str)
+        # print('leave number: ', self.sensor.tracker.get_leave_num())
+        # print('read number: ', self.sensor.tracker.get_read_num())
+        # data_str = "{0},{1},{2},{3},".format(self.sensor.tracker.get_leave_num(),
+        #                                      self.sensor.tracker.get_read_num(),
+        #                                      self.gain, self.int_cycles)
+        # for data in self.norm_data:
+        #     data_str += "{0:10.3f},".format(data)
+        # data_str += "{0},{1},{2},{3}\n".format(self.LED, self.led_current,
+        #                                        saturation_check,
+        #                                        datetime.now().strftime("%H:%M:%S"))
+        # print(data_str)
+        # with open(self.sensor.filename, mode='a',
+        #           encoding='utf-8') as _file:
+        #     _file.write(data_str)
