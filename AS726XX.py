@@ -199,7 +199,7 @@ class SensorData():
         self.data = new_data
         self.norm_data = [x*250/self.int_cycles for x in self.data]
 
-    def save_data(self, saturation_check):
+    def save_data(self):
         if not os.path.isfile(self.sensor.filename):
             header = 'Leaf number,Read number,gain,integration time,'
             for wavelength in self.wavelengths:
@@ -210,17 +210,16 @@ class SensorData():
                 _file.write(header + '\n')
 
         print('filename: ', self.sensor.filename)
-        # print('leave number: ', self.sensor.tracker.get_leave_num())
-        # print('read number: ', self.sensor.tracker.get_read_num())
-        # data_str = "{0},{1},{2},{3},".format(self.sensor.tracker.get_leave_num(),
-        #                                      self.sensor.tracker.get_read_num(),
-        #                                      self.gain, self.int_cycles)
-        # for data in self.norm_data:
-        #     data_str += "{0:10.3f},".format(data)
-        # data_str += "{0},{1},{2},{3}\n".format(self.LED, self.led_current,
-        #                                        saturation_check,
-        #                                        datetime.now().strftime("%H:%M:%S"))
-        # print(data_str)
-        # with open(self.sensor.filename, mode='a',
-        #           encoding='utf-8') as _file:
-        #     _file.write(data_str)
+        print('leave number: ', self.sensor.tracker.get_leave_num())
+        print('read number: ', self.sensor.tracker.get_read_num())
+        data_str = "{0},{1},{2},{3},".format(self.sensor.tracker.get_leave_num(),
+                                             self.sensor.tracker.get_read_num(),
+                                             self.gain, self.int_cycles)
+        for data in self.norm_data:
+            data_str += "{0:10.3f},".format(data)
+        data_str += "{0},{1},{2}\n".format(self.LED, self.led_current,
+                                               datetime.now().strftime("%H:%M:%S"))
+        print(data_str)
+        with open(self.sensor.filename, mode='a',
+                  encoding='utf-8') as _file:
+            _file.write(data_str)

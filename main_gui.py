@@ -49,11 +49,14 @@ class SpectralSensorGUI(tk.Tk):
 
     def look_for_data(self):
         if self.device.graph_event.is_set():
+            print('loook for data event')
             self.device.graph_event.clear()
-            sensor, sat_check = self.device.graph_queue.get()  # type: AS726XX
-            if sat_check == 'Clear':  # this is a hack, fix later
+            sensor = self.device.graph_queue.get()  # type: AS726XX
+            print(sensor)
+            if sensor == 'Clear':  # this is a hack, fix later
                 self.graph.delete_data()
             else:
+                sensor = sensor[0]
                 data = sensor.data
                 label = "{0}: {1} cycles, {2} {3} led current".format(sensor.name,
                                   data.int_cycles, data.led_current, data.LED)
@@ -61,7 +64,6 @@ class SpectralSensorGUI(tk.Tk):
                 self.graph.update_data(data.wavelengths,
                                        data.norm_data,
                                        label)
-
         self.after(100, self.look_for_data)
 
 

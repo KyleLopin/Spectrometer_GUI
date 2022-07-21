@@ -25,7 +25,7 @@ COUNT_SCALE = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 50, 100, 300, 500, 1000, 3000
 # structure (marker style, fill, color)
 MARKERS = {'White LED': ('o', 'none', 'black'), 'UV LED': ('o', 'full', 'blue'),
            'IR LED': ('o', 'full', 'darkred'), 'AS7262': ('x', 'none', 'black'),
-           'AS7262': ('x', 'none', 'black')}
+           'AS7262': ('x', 'none', 'black'), 'All': ('o', 'none', 'black')}
 
 class SpectroPlotter(tk.Frame):
     def __init__(self, parent, sensor, _size=(6, 3)):

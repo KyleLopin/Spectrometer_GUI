@@ -319,7 +319,12 @@ class ArduinoColorSensors(Arduino):
                 data = line.split(b': ')[1].split(b',')
                 data = [float(x) for x in data]
                 print(data)
+                print(type(self.sensor.data))
                 self.sensor.data.set_data(data)
+                # save data and update graph
+                self.sensor.data.save_data()
+                self.graph_queue.put([self.sensor])
+                self.graph_event.set()
             elif b"LED:" in line:
                 led = line.split(b": ")[1]
                 print('led: ', led)
@@ -328,9 +333,8 @@ class ArduinoColorSensors(Arduino):
             elif b'OK Read' in line or b"Saturated Read" in line:
                 saturation = line
                 # last line to recieve so save the data and update graph
-                self.sensor.data.save_data(saturation)
-                self.graph_queue.put([self.sensor, saturation])
-                self.graph_event.set()
+                # depricated
+
         # print('check222')
         # sensor.increase_read_num()
 
