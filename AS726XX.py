@@ -74,7 +74,7 @@ class AS7262():
         # self.tracker.pack(side=tk.TOP)
         # tracker_frame = tk.Frame(master)
 
-        # tk.Label(sensor_frame, text=text_str).pack(side=tk.TOP)
+        tk.Label(sensor_frame, text=text_str).pack(side=tk.TOP)
         # tk.Label(sensor_frame, text="hello").pack(tk.TOP)
 
         self.tracker.pack(side=tk.TOP, pady=5)
@@ -201,6 +201,7 @@ class SensorData():
 
     def save_data(self):
         if not os.path.isfile(self.sensor.filename):
+            print("makeing new file")
             header = 'Leaf number,Read number,gain,integration time,'
             for wavelength in self.wavelengths:
                 header += "{0} nm,".format(wavelength)
@@ -222,4 +223,6 @@ class SensorData():
         print(data_str)
         with open(self.sensor.filename, mode='a',
                   encoding='utf-8') as _file:
+            print("writing to file: ", self.sensor.filename)
             _file.write(data_str)
+        self.sensor.increase_read_num()
