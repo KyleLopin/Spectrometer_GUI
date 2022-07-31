@@ -15,7 +15,7 @@ from enum import Enum
 # installed libraries
 # local files
 import device_settings
-import psoc_spectrometers
+# import psoc_spectrometers
 import pyplot_embed
 import reg_toplevel
 

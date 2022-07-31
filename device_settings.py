@@ -5,7 +5,7 @@ import tkinter as tk
 
 # local files
 import data_class
-import psoc_spectrometers
+# import psoc_spectrometers
 
 __author__ = 'Kyle Vitautas Lopin'
 
@@ -65,7 +65,7 @@ READ_RATE_MAP = {"200 ms": 0.2, "500 ms": 0.5, "1 sec": 1, "5 sec": 5,
 
 
 class AS726X_Settings(object):
-    def __init__(self, device: psoc_spectrometers.AS726X, type):
+    def __init__(self, device, type):
         self.device = device
         self.type = type
         logging.debug('type: {0}'.format(type))

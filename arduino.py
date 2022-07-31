@@ -50,7 +50,7 @@ class Arduino_old:
                                                timeout=1)
                         device.readline()  # clear anything it may respond with first
                         device.write(b"Id")
-                        for i in range(5):
+                        for i in range(10):
                             input = device.readline()
                             # it should respond with correct ID but may take a few lines
                             if ID_NAME in input:
@@ -142,7 +142,7 @@ class Arduino(threading.Thread):
                     print('---2')
                     self.initial_lines = self.process_initial_serial(device)
                     device.write(b"Id")
-                    for i in range(5):
+                    for i in range(10):
                         input = device.readline()
                         # it should respond with correct ID but may take a few lines
                         print("Got input: ", input)

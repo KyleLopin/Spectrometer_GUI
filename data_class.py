@@ -9,8 +9,8 @@ from tkinter import messagebox
 from tkinter import filedialog
 # local files
 import device_settings
-import main_gui_old
-import psoc_spectrometers
+# import main_gui_old
+# import psoc_spectrometers
 
 
 __author__ = 'Kyle V. Lopin'

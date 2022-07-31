@@ -11,7 +11,7 @@ import tkinter as tk
 from tkinter import messagebox
 # local files
 import device_settings
-import main_gui_old
+# import main_gui_old
 import pyplot_embed
 import spectro_frame
 import usb_comm

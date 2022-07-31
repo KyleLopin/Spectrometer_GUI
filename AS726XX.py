@@ -31,8 +31,8 @@ class AS7262():
         self.wavelengths = WAVELENGTH_AS7262
         self.data = SensorData(self)
         today = date.today()
-
         self.filename = "Data/{0}_{1}.csv".format(today, self.name)
+        self.led_options = ["No lights", "Light on", "Flash light"]
 
     def __str__(self):
         button_str = "Button not found"
@@ -48,11 +48,12 @@ class AS7262():
         tk.Label(sensor_frame, text=text_str).pack(side=tk.TOP, pady=pad_y)
         sensor_frame.pack(side=tk.LEFT, expand=2, fill=tk.BOTH, pady=pad_y)
 
-        ind_options = ["No Indicator", "Indicator LED on", "Flash Indicator LED"]
-        if self.has_button:
-            ind_options.extend(["Button LED on", "Flash Button LED"])
+        ind_options = ["Indicator LED off", "Indicator LED on", "Flash Indicator LED"]
 
-        self.ind_opt_var = tk.StringVar()
+        if self.has_button:
+            ind_options.extend(["Button LED off", "Button LED on", "Flash Button LED"])
+
+        self.ind_opt_var = tk.StringVar()  # TODO: can remove self ?
         self.ind_opt_var.set(ind_options[0])
 
         tk.OptionMenu(sensor_frame, self.ind_opt_var, *ind_options,
@@ -60,35 +61,34 @@ class AS7262():
 
         # LED display options
         tk.Label(sensor_frame, text="Measurement\nLighting options:").pack(side=tk.TOP, pady=pad_y)
-        led_options = ["No lights", "Light on", "Flash light"]
 
-        self.led_opt_var = tk.StringVar()
-        self.led_opt_var.set(led_options[2])
 
-        tk.OptionMenu(sensor_frame, self.led_opt_var, *led_options,
+        self.led_opt_var = tk.StringVar()  # TODO: can remove self ?
+        self.led_opt_var.set(self.led_options[2])
+
+        tk.OptionMenu(sensor_frame, self.led_opt_var, *self.led_options,
                       command=self.set_led_option).pack(side=tk.TOP, pady=pad_y)
 
         tk.Button(sensor_frame, text="Read Sensor", command=self.read_sensor).pack(side=tk.TOP, pady=pad_y)
 
         self.tracker = TrackerFrame(self, sensor_frame)
-        # self.tracker.pack(side=tk.TOP)
-        # tracker_frame = tk.Frame(master)
-
         tk.Label(sensor_frame, text=text_str).pack(side=tk.TOP)
-        # tk.Label(sensor_frame, text="hello").pack(tk.TOP)
-
         self.tracker.pack(side=tk.TOP, pady=5)
         return sensor_frame
 
     def read_sensor(self):
-        print("read sensor: {0}".format(self.qwiic_port))
-        self.device.write("Read:{0}".format(self.qwiic_port))
+        print(f"read sensor: {self.qwiic_port}")
+        self.device.write(f"Read:{self.qwiic_port}")
 
     def read(self, data):
         print(self.filename)
 
     def set_led_option(self, command):
         print(command, self.qwiic_port)
+        if command == self.led_options[0]:  # Don't measure with the light
+            self.device.write(f"Set flash bulb:{self.qwiic_port}, {0}")
+        elif command == self.led_options[2]:  # Measure with flash
+            self.device.write(f"Set flash bulb:{self.qwiic_port}, {7}")  # use 7 to turn on all 3 bulbs of AS7265X
 
     def increase_read_num(self):
         print('check333')

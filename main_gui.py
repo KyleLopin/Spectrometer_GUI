@@ -8,6 +8,7 @@ GUI to interact with an arduino connected to multiple AS7262, AS7263, and/or AS7
 __author__ = "Kyle Vitatus Lopin"
 
 # standard libraries
+import time
 import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import ttk
@@ -29,6 +30,8 @@ class SpectralSensorGUI(tk.Tk):
         self.device = arduino.ArduinoColorSensors(self)
         print(self.device)
         while self.device.starting_up:
+            print("waiting for startup")
+            time.sleep(1)
             pass  # wait till sensor is setup (is on a seperate thread)
         data_notebook = ttk.Notebook(self)
 
@@ -80,9 +83,9 @@ class ButtonFrame(tk.Frame):
         for sensor in self.sensors:
             tab = tk.Frame(self)
             print(f"sensor: {sensor}")
-            # sensor.display(tab)
+            sensor.display(tab)
             # self.make_sensor_display(sensor, tab)
-            SensorFrame(tab, sensor)
+            # SensorFrame(tab, sensor)
             tab_display = "{0} [{1}]".format(sensor.name, sensor.qwiic_port)
             self.notebook.add(tab, text=tab_display)
             self.tabs.append(tab)
@@ -125,7 +128,7 @@ class ButtonFrame(tk.Frame):
         self.notebook.select(self.tabs[tab_index])
 
 
-class SensorFrame(tk.Frame):
+class SensorFrame_depricated(tk.Frame):
     def __init__(self, master, sensor):
         print(f"sensor: {type(sensor)}")
         print(f"master: {type(master)}")
@@ -143,8 +146,8 @@ class SensorFrame(tk.Frame):
             text_str = sensor.__str__()
             tk.Label(self, text=text_str).pack(side=tk.TOP, pady=pad_y)
             self.pack(side=tk.LEFT, expand=2, fill=tk.BOTH, pady=pad_y)
-        ind_options = ["No Indicator", "Indicator LED on", "Flash Indicator LED"]
-        ind_options.extend(["Button LED on", "Flash Button LED"])
+        ind_options = ["Indicator LED off", "Indicator LED on", "Flash Indicator LED",
+                       "Button LED off", "Button LED on", "Flash Button LED"]
 
         sensor.ind_opt_var = tk.StringVar()
         sensor.ind_opt_var.set(ind_options[0])
@@ -159,7 +162,7 @@ class SensorFrame(tk.Frame):
         sensor.led_opt_var = tk.StringVar()
         sensor.led_opt_var.set(led_options[2])
 
-        tk.OptionMenu(self, sensor.led_opt_var, *led_options,
+        tk.OptionMenu(self, sensor.led_opt_var, *sensor.led_options,
                       command=sensor.set_led_option).pack(side=tk.TOP, pady=pad_y)
 
         tk.Button(self, text="Read Sensor", command=sensor.read_sensor).pack(side=tk.TOP, pady=pad_y)

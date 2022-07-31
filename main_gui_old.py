@@ -14,7 +14,7 @@ from enum import Enum
 # local files
 import arduino
 import device_settings
-import psoc_spectrometers
+# import psoc_spectrometers
 import pyplot_embed
 import reg_toplevel
 # import serial_comm
