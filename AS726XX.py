@@ -11,6 +11,7 @@ __author__ = "Kyle Vitatus Lopin"
 from datetime import date, datetime
 import os
 import tkinter as tk
+from tkinter import ttk
 
 WAVELENGTH_AS7262 = [450, 500, 550, 570, 600, 650]
 WAVELENGTH_AS7263 = [610, 680, 730, 760, 810, 860]
@@ -74,14 +75,29 @@ class AS7262():
         self.tracker = TrackerFrame(self, sensor_frame)
         tk.Label(sensor_frame, text=text_str).pack(side=tk.TOP)
         self.tracker.pack(side=tk.TOP, pady=5)
+        ttk.Separator(sensor_frame, orient=tk.HORIZONTAL).pack(side=tk.TOP, fill=tk.X, pady=2)
+
+        self.display_flag = tk.BooleanVar()
+        self.display_checkbutton = tk.Checkbutton(sensor_frame, text="Display reflectance",
+                                                  onvalue=True, offvalue=False, variable=self.display_flag,
+                                                  command=self.set_reflectance, height=1)
+        self.display_checkbutton.deselect()
+        self.display_checkbutton.pack()
+        self.reference_button = tk.Button(sensor_frame, text="Read reference data",
+                                          command=self.get_reference_data)
+        self.reference_button.pack(pady=2, fill=tk.X)
         return sensor_frame
 
     def read_sensor(self):
         print(f"read sensor: {self.qwiic_port}")
         self.device.write(f"Read:{self.qwiic_port}")
 
-    def read(self, data):
-        print(self.filename)
+    def get_reference_data(self):
+        print("get reference data")
+
+
+    def set_reflectance(self, *args):
+        print(f"set reflectance {args}, {self.display_flag.get()}")
 
     def set_led_option(self, command):
         print(command, self.qwiic_port)

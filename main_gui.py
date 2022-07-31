@@ -19,6 +19,7 @@ import arduino
 import AS726XX  # for type hinting
 import pyplot_embed
 
+
 class SpectralSensorGUI(tk.Tk):
     def __init__(self, parent=None):
         tk.Tk.__init__(self, parent)
@@ -52,7 +53,7 @@ class SpectralSensorGUI(tk.Tk):
 
     def look_for_data(self):
         if self.device.graph_event.is_set():
-            print('loook for data event')
+            print('look for data event')
             self.device.graph_event.clear()
             sensor = self.device.graph_queue.get()  # type: AS726XX
             print(sensor)
