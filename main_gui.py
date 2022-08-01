@@ -42,12 +42,12 @@ class SpectralSensorGUI(tk.Tk):
         data_notebook.add(self.graph, text="Data")
         data_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=2)
         # self.graph.grid(columnspan=2, rowspan=2)
-        device_frame = ButtonFrame(self, self.device)
+        self.device_frame = ButtonFrame(self, self.device)
         print('done device frame')
         # device_frame.grid(column=1, rowspan=3)
-        device_frame.pack(side=tk.RIGHT, fill=tk.BOTH)
+        self.device_frame.pack(side=tk.RIGHT, fill=tk.BOTH)
         print('done device frame2')
-        device_frame.pack_propagate(1)
+        self.device_frame.pack_propagate(1)
         print('done device frame23')
         self.after(100, self.look_for_data)
 
@@ -65,6 +65,10 @@ class SpectralSensorGUI(tk.Tk):
                 label = "{0}: {1} cycles, {2} {3} led current".format(sensor.name,
                                   data.int_cycles, data.led_current, data.LED)
                 print("============>>>>>>>>>>>>>>>>>>> ", label)
+                tab_text = "{0} [{1}]".format(sensor.name, sensor.qwiic_port)
+                print(tab_text)
+                print(self.device_frame.notebook.select())
+                self.device_frame.change_notebook_tab(sensor)
                 self.graph.update_data(data.wavelengths,
                                        data.norm_data,
                                        label)
@@ -119,12 +123,17 @@ class ButtonFrame(tk.Frame):
             sum_frame.pack(side=tk.TOP, fill=tk.BOTH)
 
     def label_press(self, event, sensor):
-        print(event.widget)
-        print(dir(event))
-        print(dir(event.widget))
-        print(sensor)
+        if event:
+            print(event.widget)
+            print(dir(event))
+            print(dir(event.widget))
+            print(sensor)
         print(sensor.name)
         print(self.tab_names.index(sensor.name))
+        tab_index = self.tab_names.index(sensor.name)
+        self.notebook.select(self.tabs[tab_index])
+
+    def change_notebook_tab(self, sensor):
         tab_index = self.tab_names.index(sensor.name)
         self.notebook.select(self.tabs[tab_index])
 
@@ -185,17 +194,17 @@ class TrackerFrame(tk.Frame):
         tk.Frame.__init__(self, master)
         print(type(master))
         print(type(self))
-        self.read_num = 1
+        self.read_num = 0
         self.leaf_num = tk.IntVar()
         self.leaf_num.set(1)
         self.read_label = tk.Label(self,
-                          text="Read: {0}".format(self.read_num))
+                          text="Reads made: {0}".format(self.read_num))
         self.read_label.pack(side=tk.TOP)
         # tk.Label(self, text="hello").pack(side=tk.TOP)
         leaf_num_frame = tk.Frame(self)
         tk.Label(leaf_num_frame, text="Leaf number:").pack(side=tk.LEFT)
         tk.Spinbox(leaf_num_frame, from_=0, textvariable=self.leaf_num,
-                   command=self.increase_leaf, width=2).pack(side=tk.LEFT)
+                   command=self.increase_leaf, width=2, height=15).pack(side=tk.LEFT)
         leaf_num_frame.pack(side=tk.TOP)
 
     def update_read(self, increase: bool):

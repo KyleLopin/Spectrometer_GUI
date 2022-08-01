@@ -161,9 +161,9 @@ class Arduino(threading.Thread):
             return True
         else:
             for possible_names in DESCRIPTOR_NAMES:
-                print('pn', possible_names, _port.description)
+                # print('pn', possible_names, _port.description)
                 if possible_names in _port.description:
-                    print('back3')
+                    # print('back3')
                     return True
         return False
 
@@ -184,15 +184,18 @@ class Arduino(threading.Thread):
             return None
         while self.running:
             # print('run loop')
-            time.sleep(.05)  # ease the load on the computer
-            if not self.output.empty():
-                self.device.write(self.output.get())
-            if self.device.in_waiting:
-                # everything could be \r\n terminated
-                data_line = self.device.readline().strip(b'\r\n')
-                print('run:', data_line)
-                self.parse_input(data_line)
-                # self.parse_package(data_line)
+            try:
+                time.sleep(.05)  # ease the load on the computer
+                if not self.output.empty():
+                    self.device.write(self.output.get())
+                if self.device.in_waiting:
+                    # everything could be \r\n terminated
+                    data_line = self.device.readline().strip(b'\r\n')
+                    print('run:', data_line)
+                    self.parse_input(data_line)
+                    # self.parse_package(data_line)
+            except:
+                pass  # TODO: try to reconnect
 
     def parse_input(self, dataline):
         """ Place holder, this should be overwritten in implementation """
@@ -299,7 +302,7 @@ class ArduinoColorSensors(Arduino):
         print("end setup")
 
     def data_read(self, package):
-        sensor = None  #  set scope
+        sensor = None  # set scope
         for line in package:
             print('data line: ', line)
             if b"Reading port" in line:
